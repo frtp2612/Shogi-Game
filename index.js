@@ -1,6 +1,14 @@
-const express = require('express')
-const path = require('path')
-const PORT = process.env.PORT || 5000
+// Dependencies
+
+const express = require('express');
+const socketIO = require('socket.io');
+const path = require('path');
+const PORT = process.env.PORT || 5000;
+const http = require('http');
+
+const app = express();
+var server = http.Server(app);
+var io = socketIO(server);
 
 express()
   .use(express.static(path.join(__dirname, 'public')))
