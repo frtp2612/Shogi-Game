@@ -1,0 +1,229 @@
+/**** BOARD STYLE ***/
+
+#board {
+    grid-area: contentArea;
+    width: 612px;
+    height: 612px;
+    margin: 0 auto;
+  
+    border: 1px solid rgba(42, 46, 52, 0.8);
+    background-image: url('/images/layout/board.svg');
+    
+    border-collapse: collapse;
+  }
+  
+  #board.own {
+    -ms-transform: rotate(180deg); /* IE 9 */
+    -webkit-transform: rotate(180deg); /* Safari */
+    transform: rotate(180deg);
+  }
+  
+  tr {
+    border-top: 1px solid rgba(42, 46, 52, 0.8);
+  }
+  
+  tr + tr {
+    border-top: 1px solid rgb(224, 185, 127);
+  }
+  
+  td {
+    text-align: center;
+    border-left: 1px solid rgba(42, 46, 52, 0.8);
+    width: 68px;
+    height: 68px;
+  }
+  
+  td.active {
+    background-color: rgba(239, 226, 172, 1);
+  }
+  
+  td.possible {
+    background-color: rgba(224, 124, 87, 1);
+  }
+  
+  td > span {
+    cursor: default;
+  }
+  
+  td > img {
+    cursor: default;
+    width: 65px;
+    height: 65px;
+    display: block;
+  }
+  
+  td > img.own {
+    cursor: pointer;
+  }
+  
+  td > img.clickable {
+    cursor: pointer;
+  }
+  
+  td + td {
+    border-left: 1px solid #e0b97f;
+  }
+  
+  div.right-area {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    grid-area: rightContainer;
+    grid-template-areas:
+            "."
+            "."
+            "bottom";
+  }
+  
+  div.left-area {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    grid-area: leftContainer;
+    grid-template-areas:
+            "top"
+            "."
+            ".";
+  }
+  
+  div.right-area > ul,
+  div.left-area > ul {
+    width: 260px;
+    height: 260px;
+    margin: 0 auto;
+  
+    border: 1px solid rgba(42, 46, 52, 0.8);
+    /*background-color: rgba(255, 243, 196, 1);*/
+    
+    border-collapse: collapse;
+  
+    overflow-y: auto;
+  
+    background-image: url('/images/layout/board.svg');
+  }
+  
+  div.right-area > ul.own {
+    grid-area: bottom;
+  }
+  
+  div.left-area > ul.opponent {
+    grid-area: top;
+  }
+  
+  div.right-area > ul > li,
+  div.left-area > ul > li {
+    width: 65px;
+    height: 65px;
+    float: left;
+  }
+  
+  div.right-area > ul > li > img,
+  div.left-area > ul > li > img {
+    width: 100%;
+    height: 100%;
+  }
+  
+  div.left-area img {
+    -ms-transform: rotate(180deg); /* IE 9 */
+    -webkit-transform: rotate(180deg); /* Safari */
+    transform: rotate(180deg);
+  }
+
+
+  /***MODAL BOX STYLE ****/
+  div.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.1);
+    z-index: 9999;
+  }
+  
+  div.modal > div.modal-box {
+    position: relative;
+    top: 50%;
+    left: 50%;
+    width: 192px;
+    height: 144px;
+    margin-top: -72px;
+    margin-left: -96px;
+    background-color: rgba(255, 255, 255, 1);
+    z-index: 9999;
+    border-radius: 6px;
+    -moz-border-radius: 6px;
+    -webkit-border-radius: 6px;
+  }
+  
+  div.modal > div.modal-box > span {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 32px;
+    text-align: center;
+    display: block;
+    line-height: 32px;
+  }
+  
+  div.modal > div.modal-box > div {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 64px;
+    height: 64px;
+    text-align: center;
+    float: left;
+  }
+  
+  div.modal > div.modal-box > div > img {
+    width: 64px;
+    height: 64px;
+  }
+  
+  div.modal > div.modal-box > ul {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 48px;
+    margin: 0;
+    padding: 0;
+  }
+  
+  div.modal > div.modal-box > ul > li {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
+    float: left;
+    text-align: center;
+  }
+  
+  div.modal li button {
+    width: 100%;
+    height: 40px;
+    background-color: rgba(216, 82, 80, 1);
+    border: none;
+    outline: none;
+  
+    font-size: 14px;
+  
+    border-radius: 6px;
+    -moz-border-radius: 6px;
+    -webkit-border-radius: 6px;
+    color: rgba(255, 255, 255, 0.9);
+  
+    cursor: pointer;
+  
+    margin-top: 8px;
+  }
+  
+  div.modal li:first-child button {
+    background-color: rgba(75, 209, 124, 1);
+  
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.7);
+  }

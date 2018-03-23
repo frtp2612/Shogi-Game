@@ -1,0 +1,83 @@
+body {
+  padding: 0;
+  margin: 0;
+}
+
+* {
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+div#container {
+  display: grid;
+
+  grid-template-columns: 1fr 16px 260px 16px 1fr 16px 260px 1fr;
+
+  grid-template-areas:
+          "leftMost top top top top top top top"
+          "leftMost topContentArea topContentArea topContentArea topContentArea topContentArea topContentArea topContentArea"
+          "leftMost . leftContainer . contentArea . rightContainer ."
+          "leftMost . . align align align . .";
+  height: 100vh;
+}
+
+div.connectedUsers {
+  grid-area: leftMost;
+  background-color: rgba(232, 236, 242, 1);
+  width: 200px;
+}
+
+div.connectedUsers > span {
+  width: 100%;
+  display: block;
+  height: 32px;
+  line-height: 32px;
+  text-indent: 12px;
+  font-size: 18px;
+  background-color: rgb(90, 153, 236);
+  color: rgba(255,255,255,1);
+}
+
+div.connectedUsers > ul {
+  width: 100%;
+  height: calc(100vh - 32px);
+  text-indent: 12px;
+}
+
+div.connectedUsers > ul > li {
+  width: 100%;
+  height: 32px;
+  text-indent: 12px;
+  line-height: 32px;
+}
+
+div.createRoom {
+  grid-area: top;
+  border-bottom: 1px solid rgba(232, 236, 242, 1);
+  height: 32px;
+}
+
+div.rooms {
+  grid-area: topContentArea;
+  height: calc(100vh - 32px);
+}
+
+div.rooms > ul {
+  max-height: calc(100% - 64px);
+  margin: 32px auto;
+}
+
+div.rooms > ul > li {
+  width: 100%;
+  height: 48px;
+  border-bottom: 1px solid rgba(232, 236, 242, 1);
+}

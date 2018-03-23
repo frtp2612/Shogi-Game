@@ -1,27 +1,215 @@
-.jumbotron {
-  background: #532F8C;
-  color: white;
-  padding-bottom: 80px; }
-  .jumbotron .btn-primary {
-    background: #845ac7;
-    border-color: #845ac7; }
-    .jumbotron .btn-primary:hover {
-      background: #7646c1; }
-  .jumbotron p {
-    color: #d9ccee;
-    max-width: 75%;
-    margin: 1em auto 2em; }
-  .navbar + .jumbotron {
-    margin-top: -20px; }
-  .jumbotron .lang-logo {
-    display: block;
-    background: #B01302;
-    border-radius: 50%;
-    overflow: hidden;
-    width: 100px;
-    height: 100px;
-    margin: auto;
-    border: 2px solid white; }
-    .jumbotron .lang-logo img {
-      max-width: 100%; }
+body {
+  padding: 0;
+  margin: 0;
+}
 
+* {
+  font-size: 14px;
+  font-family: 'Noto Sans', sans-serif;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+div#container {
+  display: grid;
+
+  grid-template-columns: 1fr 16px 260px 16px 1fr 16px 260px 1fr;
+
+  grid-template-areas:
+          "leftMost top top top top top top top"
+          "leftMost topContentArea topContentArea topContentArea topContentArea topContentArea topContentArea topContentArea"
+          "leftMost . leftContainer . contentArea . rightContainer ."
+          "leftMost . . align align align . .";
+  height: 100vh;
+}
+
+div.connectedUsers {
+  grid-area: leftMost;
+  background-color: rgba(242, 242, 242, 1);
+}
+
+div.connectedUsers > span {
+  width: 100%;
+  display: block;
+  height: 56px;
+  line-height: 56px;
+  text-indent: 12px;
+  font-size: 18px;
+  background-color: rgba(219, 64, 81,1);/*rgb(242, 177, 27);*/
+  color: rgba(255,255,255,1);
+}
+
+div.connectedUsers > ul {
+  width: 100%;
+  height: calc(100vh - 32px);
+}
+
+div.connectedUsers > ul > li {
+  width: calc(100% - 32px);
+  height: 32px;
+  line-height: 32px;
+  margin: 0 16px;
+  margin-top: 8px;
+  background-color: rgba(242, 242, 242, 1);
+  border-radius: 3px;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  cursor: pointer;
+}
+
+div.connectedUsers > ul > li:first-child {
+  margin-top: 16px;
+}
+
+div.connectedUsers > ul > li:hover {
+  background-color: rgb(64, 72, 75);
+  color: rgba(240, 240, 240, 1);
+  -webkit-box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
+  -moz-box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
+  box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
+}
+
+div.connectedUsers > ul > li:before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  margin: 13px;
+  background-color: rgba(35, 177, 108, 1);
+  border-radius: 180px;
+  -moz-border-radius: 180px;
+  -webkit-border-radius: 180px;
+  cursor: pointer;
+  display: block;
+  float: left;
+}
+
+div.connectedUsers > ul > li.busy:before {
+  background-color: rgba(191, 36, 65, 1);
+}
+
+div.createRoom {
+  grid-area: top;
+  background-color: rgb(32, 40, 43);
+  height: 56px;
+}
+
+div.createRoom > ul > li {
+  height: 100%;
+  line-height: 56px;
+  float: left;
+  margin-left: 24px;
+  color: rgba(212, 212, 212, 1);
+}
+
+input[type="text"] {
+  outline: none;
+  width: 240px;
+  height: 28px;
+  border: 1px solid rgb(48, 56, 59);
+  background-color: rgb(48, 56, 59);
+  text-indent: 8px;
+  color: rgba(212, 212, 212, 1);
+}
+
+button {
+  outline: none;
+  background-color: rgb(48, 56, 59);
+  color: rgba(212, 212, 212, 1);
+  border: none;
+  margin: 0;
+  margin-left: 1px;
+  padding: 0 8px;
+  height: 32px;
+  cursor: pointer;
+}
+
+button:hover {
+  outline: none;
+  background-color: rgb(64, 72, 75);
+  color: rgba(240, 240, 240, 1);
+}
+
+div.rooms {
+  grid-area: topContentArea;
+  height: calc(100vh - 32px);
+}
+
+div.rooms > ul {
+  max-height: calc(100% - 64px);
+  margin: 32px auto;
+  width: calc(100% - 64px);
+}
+
+div.rooms > ul > li {
+  width: calc(50% - 48px);
+  height: 80px;
+  margin: 0;
+  margin-left: 16px;
+  float: left;
+
+  display: grid;
+
+  grid-template-columns: auto auto 120px;
+
+  grid-template-rows: 24px 32px 24px;
+
+  grid-template-areas:
+          "leftTop centerTop rightTop"
+          "leftTop centerCenter rightCenter"
+          "leftBottom leftContainer rightBottom";
+
+  background-color: rgb(32, 40, 43);
+  margin-bottom: 32px;
+  padding: 16px;
+
+  -webkit-box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
+  -moz-box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
+  box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
+}
+
+div.rooms > ul > li > span.room {
+  grid-area: leftTop;
+  height: 48px;
+  margin: 0;
+  line-height: 48px;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+div.rooms > ul > li > span.createdBy {
+  grid-area: leftBottom;
+  height: 24px;
+  margin: 0;
+  line-height: 24px;
+}
+
+div.rooms > ul > li > span.connected {
+  grid-area: centerCenter;
+  height: 32px;
+  margin: 0;
+  line-height: 32px;
+  padding: 0 16px;
+}
+
+div.rooms > ul > li > button {
+  grid-area: rightCenter;
+  height: 32px;
+  margin: 0;
+  line-height: 32px;
+}
+
+div.rooms > ul > li:nth-child(2n + 1) {
+  margin: 0;
+  margin-right: 16px;
+}
+
+div.rooms > ul > li > span {
+  color: rgba(212, 212, 212, 1);
+}
