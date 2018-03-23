@@ -446,6 +446,7 @@ Player.onDisconnect = function (socket) {
   delete Player.list[socket.uniqueId];
   delete Room.list[socket.room];
   io.in(mainRoom).emit('connectedUsers', Player.list);
+  io.in(mainRoom).emit('rooms', Room.list);
   socket.leave(socket.room);
   socket.leave(mainRoom);
   console.log(socket.id + " has disconnected");
