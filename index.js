@@ -356,14 +356,14 @@ Player.onConnect = function (socket, playerName) {
     if (room.turn == "black") {
 
       socket.emit('highlightSelectedPiece', clickedPiece);
-      var piecePossibleMoves = showPossibleMoves(room.player1Pieces[0], room.player2Pieces[1], clickedPiece);
+      var piecePossibleMoves = showPossibleMoves(room.player1Pieces[0], room.player2Pieces[1], clickedPiece, socket);
       socket.emit('showSelectedPieceMovements', piecePossibleMoves);
       socket.broadcast.to(socket.room).emit('highlightSelectedPiece', convertPiecePosition(clickedPiece));
 
     } else if (room.turn == "red") {
 
       socket.emit('highlightSelectedPiece', clickedPiece);
-      var piecePossibleMoves = showPossibleMoves(room.player2Pieces[0], room.player1Pieces[1], clickedPiece);
+      var piecePossibleMoves = showPossibleMoves(room.player2Pieces[0], room.player1Pieces[1], clickedPiece, socket);
       socket.emit('showSelectedPieceMovements', piecePossibleMoves);
       socket.broadcast.to(socket.room).emit('highlightSelectedPiece', convertPiecePosition(clickedPiece));
 
@@ -472,7 +472,6 @@ io.sockets.on('connection', function (socket) {
     socket.on('disconnect', function () { 
       delete SOCKET_LIST[socket.uniqueId];
       Player.onDisconnect(socket);
-      
     });
   });
 });
@@ -543,7 +542,7 @@ io.on('connect', function (socket) {
       room.player1Pieces[1][pieceId-1].newPosition(convertPiecePosition(newPosition));
     }
 
-    updateView(selectedPiece, "", newPosition, socket);
+    updateView(selectedPiece, pieceId, newPosition, socket, true);
     updateTurns(socket);
   });
 
@@ -639,7 +638,7 @@ io.on('connect', function (socket) {
       selectedPieceCounterpart.newPosition(convertPiecePosition(clickedPosition));
     }
 
-    updateView(selectedPiece, clickedPiece, clickedPosition, socket);
+    updateView(selectedPiece, clickedPiece, clickedPosition, socket, false);
     if (controlUpgrade == false) {
       updateTurns(socket);
     }
@@ -668,15 +667,15 @@ function upgradePiece(selectedPiece, clickedPiece, clickedPosition, socket, choi
       }
     }
 
-    updateView(selectedPiece, clickedPosition, clickedPosition, socket);
+    updateView(selectedPiece, clickedPosition, clickedPosition, socket, false);
     updateTurns(socket);
 }
 
-function updateView(selectedPiece, clickedPiece, clickedPosition, socket) {
+function updateView(selectedPiece, clickedPiece, clickedPosition, socket, dropping) {
   var room = Room.list[socket.room];
 
-  socket.emit('updatePlayerView', selectedPiece, clickedPiece, clickedPosition);
-  socket.broadcast.to(socket.room).emit('updateOpponentView', selectedPiece, convertPiecePosition(clickedPiece), convertPiecePosition(clickedPosition));
+  socket.emit('updatePlayerView', selectedPiece, clickedPiece, clickedPosition, dropping);
+  socket.broadcast.to(socket.room).emit('updateOpponentView', selectedPiece, convertPiecePosition(clickedPiece), convertPiecePosition(clickedPosition), dropping);
 
 }
 
@@ -700,7 +699,7 @@ function findObjectByKey(array, key, value) {
   return null;
 }
 
-function showPossibleMoves(ownPieces, opponentPieces, selectedPiece) {
+function showPossibleMoves(ownPieces, opponentPieces, selectedPiece, socket) {
   var piece = findObjectByDoubleKey(ownPieces, 'currentPosition', 'captured', selectedPiece, false);
   if(piece == null) {
     piece = findObjectByDoubleKey(Room.list[socket.room].player2Pieces[0], 'currentPosition', 'captured', selectedPiece, false);

@@ -104,7 +104,7 @@ $(document).ready(function(){
 
             $( "#capturedBoard.own" ).on('click', 'li', function( event ) {
                 //event.stopPropagation();
-                clickedPiece = $('> img', this).attr('data-name');
+                clickedPiece = $(this).attr('data-name');
                 if(moving == false && dropping == false) {
                     socket.emit("showDropPositions", clickedPiece);
                     dropping = true;
@@ -223,8 +223,11 @@ $(document).ready(function(){
         
     });
 
-    socket.on('updatePlayerView', function(piece, oldPosition, newPosition) {
+    socket.on('updatePlayerView', function(piece, oldPosition, newPosition, dropping) {
         $("[data-name=\"" + oldPosition + "\"]").html("");
+        if(dropping == true) {
+            $("[data-name=\"" + oldPosition + "\"]").remove();
+        }
         new Audio("/audio/move.mp3").play();
         if(piece.promoted == true) {
             $("[data-name=\"" + newPosition + "\"]").html("<img id='" + piece.id + "' class='own' src='/images/layout/" + piece.upgradedName + ".svg'>");
@@ -233,8 +236,11 @@ $(document).ready(function(){
         }
     });
 
-    socket.on('updateOpponentView', function(piece, oldPosition, newPosition) {
+    socket.on('updateOpponentView', function(piece, oldPosition, newPosition, dropping) {
         $("[data-name=\"" + oldPosition + "\"]").html("");
+        if(dropping == true) {
+            $("[data-name=\"" + oldPosition + "\"]").remove();
+        }
         new Audio("/audio/move.mp3").play();
         if(piece.promoted == true) {
             $("[data-name=\"" + newPosition + "\"]").html("<img id='" + piece.id + "' src='/images/layout/" + piece.upgradedName + "Opp.svg'>");
@@ -244,11 +250,11 @@ $(document).ready(function(){
     });
 
     socket.on('addPieceToDrops', function(piece) {
-        $("#capturedBoard.own").append("<li><img data-name='" + piece.id + "' src='/images/layout/" + piece.name + ".svg'></li>");
+        $("#capturedBoard.own").append("<li data-name='" + piece.id + "'><img src='/images/layout/" + piece.name + ".svg'></li>");
     });
 
     socket.on('addOpponentPieceToDrops', function(piece) {
-        $("#capturedBoard.opponent").append("<li><img id='" + piece.id + "' src='/images/layout/" + piece.name + "Opp.svg'></li>");
+        $("#capturedBoard.opponent").append("<li data-name='" + piece.id + "'><img src='/images/layout/" + piece.name + "Opp.svg'></li>");
     });
 
     /****ERRORS HANDLER****/
