@@ -1,8 +1,19 @@
 var socket = io();
 
-var container = document.getElementById('container');
+const container = document.getElementById('container');
+const boardCoordinates = Array("A", "B", "C", "D", "E", "F", "G", "H", "I");
 var roomName;
-var myPiecePossibleMoves;
+var possibleMoves;
+
+function convertPosition(position) {
+    var coordinate = position.split("-");
+  
+    var r = boardCoordinates[8 - boardCoordinates.indexOf(coordinate[0])];
+    var c = 10 - parseInt(coordinate[1]);
+  
+    var piecePosition = r + "-" + c;
+    return piecePosition;
+}
 
 $(document).ready(function(){
     // HANDLE CLICK EVENTS
@@ -37,88 +48,70 @@ $(document).ready(function(){
     });
 
     socket.on('turn', function(msg) {
-        
+        var moving = false;
+        var dropping = false;
+        var selectedPiece;
+
         if(msg == "your turn") {
-            var moving = false;
-            var dropping = false;
-            var clickedPiece;
+
             console.log("your turn");
+
             $('td').bind('click');
-            $('img.own').bind('click');
             $('#capturedBoard.own').bind('click');
 
-            $( "td" ).on('click', function( event ) {
-                //event.stopPropagation();
-                if(moving == true) {
-                    clickedPosition = $(this).attr('data-name');
-                    if(clickedPiece != clickedPosition && !$("[data-name=\"" + clickedPosition + "\"]").hasClass('own')) {
-                        for(var index in myPiecePossibleMoves) {
-                            if(myPiecePossibleMoves[index] == clickedPosition) {
-                                socket.emit("moveToNewPosition", clickedPiece, clickedPosition);
-                                socket.emit("hideMovements", clickedPiece);
-                                moving = false;
-                                break;
-                            }
+            $("td").on('click', function( event ) {
+
+                if(moving == false && dropping == false) {
+                    selectedPiece = $(this).attr('data-name');
+                    //console.log(selectedPiece);
+                    socket.emit("movements", selectedPiece);
+                    moving = true;
+                } else if(moving == true && dropping == false){
+                    var clickedPosition = $(this).attr('data-name');
+                    if(selectedPiece != clickedPosition) {
+                        if(possibleMoves != undefined && jQuery.inArray(clickedPosition, possibleMoves) > -1){
+                            socket.emit("move", selectedPiece, clickedPosition);
+                            socket.emit("hideMovements", selectedPiece);
                         }
+                        moving = false;
                     } else {
-                        console.log('you can t move on your own pieces');
+                        socket.emit("hideMovements", selectedPiece);
+                        moving = false;
                     }
-                } else if(dropping == true) {
-                    clickedPosition = $(this).attr('data-name');
-                    if(clickedPiece != clickedPosition && !$("[data-name=\"" + clickedPosition + "\"]").hasClass('own')) {
-                        for(var index in myPiecePossibleMoves) {
-                            if(myPiecePossibleMoves[index] == clickedPosition) {
-                                socket.emit("dropToPosition", clickedPiece, clickedPosition);
-                                socket.emit("hideDropPositions", clickedPiece);
-                                dropping = false;
-                                break;
-                            }
+                }
+
+                if(dropping == true && moving == false) {
+                    var clickedPosition = $(this).attr('data-name');
+                    if(selectedPiece != clickedPosition && !$("[data-name=\"" + clickedPosition + "\"]").hasClass('own')) {
+                        if(possibleMoves != undefined && jQuery.inArray(clickedPosition, possibleMoves) > -1) {
+                            socket.emit("drop", selectedPiece, clickedPosition);
+                            socket.emit("hideDropPositions", selectedPiece);
+                            dropping = false;
                         }
                     } else {
                         console.log('you can t move on your own pieces');
                     }
                 }
             });
-
-            $('img.own').on('click', function( event ) {
-                event.stopPropagation();
-                clickedPiece = $(this).parent().attr('data-name');
-                if(!$(this).parent().hasClass('active')) {
-                    if(moving == false) {
-                        socket.emit("showMovements", clickedPiece);
-                        moving = true;
-                    }
-                } else {
-                    if(moving == true && $(this).hasClass('clickable')) {
-                        clickedPosition = $(this).parent().attr('data-name');
-                        socket.emit("moveToNewPosition", clickedPiece, clickedPosition);
-                        socket.emit("hideMovements", clickedPiece);
-                        moving = false;
-                    } else {
-                        socket.emit("hideMovements", clickedPiece);
-                        moving = false;
-                    }
-                }
-                
-            });
-
+    
             $( "#capturedBoard.own" ).on('click', 'li', function( event ) {
                 //event.stopPropagation();
-                clickedPiece = $(this).attr('data-name');
+                selectedPiece = $(this).attr('data-name');
                 if(moving == false && dropping == false) {
-                    socket.emit("showDropPositions", clickedPiece);
+                    socket.emit("showDrop", selectedPiece);
                     dropping = true;
                 } else {
-                    socket.emit("hideDropPositions", clickedPiece);
+                    socket.emit("hideDrop", selectedPiece);
                     dropping = false;
                 }
             });
-
         } else {
+
             $('td').unbind('click');
-            $('img.own').unbind('click');
             $('#capturedBoard.own').unbind('click');
+
             console.log("it's your opponent's turn");
+
         }
     });
 
@@ -163,14 +156,13 @@ $(document).ready(function(){
         //console.log(piecesList[0]);
         var piece;
         //console.log(piecesList);
-        for(var index in piecesList[0]){
-            piece = piecesList[0][index];
-            $("[data-name=\"" + piece.currentPosition + "\"]").html("<img id='" + piece.id + "' class='own' src='/images/layout/" + piece.name + ".svg'>");
-        }
-
-        for(var index in piecesList[1]){
-            piece = piecesList[1][index];
-            $("[data-name=\"" + piece.currentPosition + "\"]").html("<img id='" + piece.id + "' src='/images/layout/" + piece.name + "Opp.svg'>");
+        for(var index in piecesList){
+            piece = piecesList[index];
+            if(piece.property == "player1"){
+                $("[data-name=\"" + piece.currentPosition + "\"]").html("<img class='own' src='/images/layout/" + piece.name + ".svg'>");
+            } else {
+                $("[data-name=\"" + piece.currentPosition + "\"]").html("<img src='/images/layout/" + piece.name + "Opp.svg'>");
+            }
         }
     });
 
@@ -192,11 +184,11 @@ $(document).ready(function(){
         $('img:not(.own).clickable').removeClass('clickable');
     });
 
-    socket.on('showSelectedPieceMovements', function(piecePossibleMoves) {
-        myPiecePossibleMoves = piecePossibleMoves;
-        for(var index in piecePossibleMoves) {
-            $("[data-name=\"" + piecePossibleMoves[index] + "\"]").addClass("possible");
-            $("[data-name=\"" + piecePossibleMoves[index] + "\"] > img").addClass("clickable");
+    socket.on('showMovements', function(moves) {
+        possibleMoves = moves;
+        for(var index in moves) {
+            $("[data-name=\"" + moves[index] + "\"]").addClass("possible");
+            $("[data-name=\"" + moves[index] + "\"] > img").addClass("clickable");
         }
     });
 
@@ -205,7 +197,17 @@ $(document).ready(function(){
         $('img:not(.own).clickable').removeClass('clickable');
     });
 
-    socket.on('wantToUpgrade', function(piece, clickedPiece, clickedPosition){
+    socket.on('endGame', function(msg, img) {
+        var win = "<div class='modal'><div class='modal-box'><span>You " + msg +"</span><div class='end'><img src='/images/layout/"+ img +".svg'></div><ul><li><button value='Close'>Close</button></div></div>";
+        var lose = "<div class='modal'><div class='modal-box'><span>You " + msg +"</span><ul><li><button value='Rematch'>Rematch</button></li><li><button value='Close'>Close</button></li></ul></div></div>";
+        if(msg == "won") {
+            $('body').append($(win));
+        } else {
+            $('body').append($(lose));
+        }
+    });
+
+    socket.on('wantToUpgrade', function(piece, opponentPiece, position){
         var upgrade = "<div class='modal'><div class='modal-box'><span>Miglioramento Possibile</span><div><img src='/images/layout/"+ piece.name +".svg'></div><div class='to'><img src='/images/layout/arrow.svg'></div><div><img src='/images/layout/" + piece.upgradedName + ".svg'></div><ul><li><button value='Migliora'>Migliora</button></li><li><button value='Annulla'>Annulla</button></li></ul></div></div>";
         $('body').append($(upgrade));
         var choice;
@@ -213,39 +215,41 @@ $(document).ready(function(){
             var clicked = $(this).val();
             if(clicked == "Migliora") {
                 choice = true;
-                socket.emit('upgrade', piece, clickedPiece, clickedPosition, choice);
+                socket.emit('upgrade', piece, opponentPiece, position, choice);
             } else if(clicked == "Annulla"){
                 choice = false;
-                socket.emit('upgrade', piece, clickedPiece, clickedPosition, choice);
+                socket.emit('upgrade', piece, opponentPiece, position, choice);
             }
             $('.modal').remove();
         });
-        
     });
 
     socket.on('updatePlayerView', function(piece, oldPosition, newPosition, dropping) {
-        $("[data-name=\"" + oldPosition + "\"]").html("");
         if(dropping == true) {
-            $("[data-name=\"" + oldPosition + "\"]").remove();
+            $("#capturedBoard.own > [data-name=\"" + oldPosition + "\"]").remove();
+        } else {
+            $("[data-name=\"" + oldPosition + "\"]").html("");
         }
         new Audio("/audio/move.mp3").play();
         if(piece.promoted == true) {
-            $("[data-name=\"" + newPosition + "\"]").html("<img id='" + piece.id + "' class='own' src='/images/layout/" + piece.upgradedName + ".svg'>");
+            $("[data-name=\"" + newPosition + "\"]").html("<img class='own' src='/images/layout/" + piece.upgradedName + ".svg'>");
         } else {
-            $("[data-name=\"" + newPosition + "\"]").html("<img id='" + piece.id + "' class='own' src='/images/layout/" + piece.name + ".svg'>");
+            $("[data-name=\"" + newPosition + "\"]").html("<img class='own' src='/images/layout/" + piece.name + ".svg'>");
         }
     });
 
     socket.on('updateOpponentView', function(piece, oldPosition, newPosition, dropping) {
-        $("[data-name=\"" + oldPosition + "\"]").html("");
+        
         if(dropping == true) {
-            $("[data-name=\"" + oldPosition + "\"]").remove();
+            $("#capturedBoard.opponent > [data-name=\"" + oldPosition + "\"]").remove();
+        } else {
+            $("[data-name=\"" + oldPosition + "\"]").html("");
         }
         new Audio("/audio/move.mp3").play();
         if(piece.promoted == true) {
-            $("[data-name=\"" + newPosition + "\"]").html("<img id='" + piece.id + "' src='/images/layout/" + piece.upgradedName + "Opp.svg'>");
+            $("[data-name=\"" + newPosition + "\"]").html("<img src='/images/layout/" + piece.upgradedName + "Opp.svg'>");
         } else {
-            $("[data-name=\"" + newPosition + "\"]").html("<img id='" + piece.id + "' src='/images/layout/" + piece.name + "Opp.svg'>");
+            $("[data-name=\"" + newPosition + "\"]").html("<img src='/images/layout/" + piece.name + "Opp.svg'>");
         }
     });
 

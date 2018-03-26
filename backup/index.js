@@ -1,5 +1,4 @@
 // Dependencies
-
 const express = require('express');
 const socketIO = require('socket.io');
 const path = require('path');
@@ -9,7 +8,6 @@ const http = require('http');
 var app = require('express')();
 var server = http.createServer(app);
 var io = socketIO(server);
-//var io = socketIO.listen(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', function (req, res) {
@@ -138,8 +136,11 @@ const page = "" +
 "</ul>" +
 "</div>" +
 "<div class='createRoom'>" +
-  "<input type='text' placeholder='Room Name' minlength='4' maxlength='16'>" +
-  "<button id='createRoomButton'>Create Room</button>" +
+  "<ul>" +
+  "<li>Rules</li>" +
+  "<li><input type='text' class='roomName' placeholder='Room Name' minlength='4' maxlength='16'>" +
+  "<button id='createRoomButton'>Create Room</button></li>" +
+  "</ul>" +
 "</div>" +
 "<div class='rooms'>" +
 "<ul></ul>" +
@@ -149,19 +150,19 @@ const login = "" +
 "<div class='login'>" +
   "<input type='text' placeholder='Username' minlength='4' maxlength='16'>" +
   "<button id='loginButton'>Login</button>" +
-  "<input type='text' class='roomName' placeholder='Room Name' minlength='4' maxlength='16'>" +
-  "<button id='joinNewRoom'>Login</button>" +
 "</div>";
 
 //GAME VARIABLES
 var SOCKET_LIST = {};
 
-var Player = function (id, name) {
+var Player = function (id, uniqueId, name) {
   var self = {
     id: id,
+    uniqueId: uniqueId,
     name: name,
     roomCreated: false,
     insideRoom: false,
+    faction: ""
   }
 
   self.createRoom = function () {
@@ -182,7 +183,11 @@ var Player = function (id, name) {
     self.insideRoom = false;
   }
 
-  Player.list[id] = self;
+  self.setFaction = function (value) {
+    self.faction = value;
+  }
+
+  Player.list[uniqueId] = self;
 
   return self;
 }
@@ -195,17 +200,31 @@ var Room = function (id, name) {
     name: name,
     player1: Player.list[id],
     player2: "",
-    player1Pieces: "",
-    player2Pieces: "",
+    player1Pieces: createPieces(),
+    player2Pieces: createPieces(),
+    connectedUsers: 1,
+    wantToStart: 0,
     turn: "black"
   }
 
-  self.destroyRoom = function () {
-    delete Room.list[id];
+  self.updateWantsToStart = function () {
+    self.wantToStart++;
+  }
+
+  self.destroyRoom = function (name) {
+    delete Room.list[name];
   }
 
   self.setOpponent = function(value) {
     self.player2 = value;
+    self.connectedUsers = 2;
+    self.setPlayersPieces();
+  }
+
+  self.abandonRoom = function() {
+    self.player2 = "";
+    self.connectedUsers = 1;
+    self.setPlayersPieces();
   }
 
   self.setPlayersPieces = function() {
@@ -224,7 +243,7 @@ var Room = function (id, name) {
 
 Room.list = {};
 
-var Piece = function (id, name, upgradable, property, startPosition, upgradedName, simpleMoves, updgradedMoves) {
+var Piece = function (id, name, upgradable, property, startPosition, upgradedName, simpleMoves, upgradedMoves) {
   var self = {
     id: id,
     name: name,
@@ -233,111 +252,226 @@ var Piece = function (id, name, upgradable, property, startPosition, upgradedNam
     property: property,
     captured: false,
     currentPosition: startPosition,
-    pieceUpgradedName: upgradedName,
+    upgradedName: upgradedName,
     pieceMoves: simpleMoves,
-    pieceUpgradedMoves: updgradedMoves
+    pieceUpgradedMoves: upgradedMoves
   }
 
   self.newPosition = function (position) {
-    currentPosition = position;
+    self.currentPosition = position;
   }
 
   self.capture = function (newProperty) {
-    captured = true;
-    property = newProperty;
+    self.captured = true;
+    self.property = newProperty;
+    self.promoted = false;
   }
 
   self.promote = function () {
-    promoted = true;
+    self.promoted = true;
   }
 
-  self.drop = function () {
-    captured = false;
+  self.drop = function (value) {
+    self.captured = false;
+    self.property = value;
   }
 
   return self;
 }
 
+/**** END OF OBJECTS ******/
+
+
+/**** ROOM METHODS ******/
+Room.playerTurn = function (socket) {
+  if(Room.list[socket.room].wantToStart == 0) {
+    socket.broadcast.to(socket.room).emit('askToStart', "Your opponent wants to start the match");
+  } else if(Room.list[socket.room].wantToStart == 1) {
+    socket.broadcast.to(socket.room).emit('askToStart', "Your opponent accepted your match request");
+    if(Room.list[socket.room].player2.id == socket.id) {
+      socket.emit('turn', "");
+      socket.broadcast.to(socket.room).emit('turn', "your turn");
+    } else {
+      socket.emit('turn', "your turn");
+      socket.broadcast.to(socket.room).emit('turn', "");
+    }
+  }
+  
+  if(Room.list[socket.room].wantToStart < 2) {
+    Room.list[socket.room].updateWantsToStart();
+  }
+
+}
+
+/**** PLAYER METHODS ******/
 Player.onConnect = function (socket, playerName) {
-  var player = Player(socket.id, playerName);
+  var player = Player(socket.id, socket.uniqueId, playerName);
   
   socket.on('createRoom', function(roomName){ // create room
-    player.createRoom();
-    var room = Room(socket.id, roomName);
-    room.setPlayersPieces();
-    //console.log(room);
-    socket.broadcast.to(mainRoom).emit('rooms', Room.list);
 
+    player.createRoom();
+
+    io.in(mainRoom).emit('connectedUsers', Player.list);
+    socket.leave(mainRoom);
+
+    player.setFaction("black");
+    var room = Room(socket.uniqueId, roomName);
+
+    socket.room = roomName;
+    socket.join(socket.room);
+    socket.broadcast.emit('rooms', Room.list, socket.room);
     socket.emit('displayPage', board); // send to user the main page
 
     socket.emit('displayPieces', room.player1Pieces);
   });
 
   socket.on('joinRoom', function(roomName){ // join room
-    console.log(io.sockets.adapter.rooms[roomName].length);
-    if(io.sockets.adapter.rooms[roomName].length <= 2) {
-      
-      player.joinRoom();
+    //console.log(io.sockets.adapter.rooms[roomName].length);
+    socket.room = roomName;
+    socket.join(socket.room);
+    player.joinRoom();
+    player.setFaction("red");
 
-      Room.list[roomName].setOpponent(player);
-      //console.log(Room.list[roomName]);
-      
-      socket.emit('displayPage', board); // send to user the main page
-      socket.emit('displayPieces', Room.list[roomName].player2Pieces);
+    io.in(mainRoom).emit('connectedUsers', Player.list);
+    socket.leave(mainRoom);
+
+    Room.list[socket.room].setOpponent(player);
+    //console.log(socket.room);
+    socket.broadcast.emit('rooms', Room.list, socket.room);
+    socket.broadcast.to(socket.room).emit('joined', player.name + " has joined the room");
+
+    socket.emit('displayPage', board); // send to user the main page
+    socket.emit('displayPieces', Room.list[roomName].player2Pieces);
+  });
+
+  socket.on('matchStart', function() {
+    //console.log(Room.list[socket.room]);
+    if (Room.list[socket.room].player1 != undefined && Room.list[socket.room].player2 != undefined) {
+      Room.playerTurn(socket);
+    }
+  });
+
+  socket.on('showMovements', function (clickedPiece) {
+    var room = Room.list[socket.room];
+    if (room.turn == "black") {
+
+      socket.emit('highlightSelectedPiece', clickedPiece);
+      var piecePossibleMoves = showPossibleMoves(room.player1Pieces[0], room.player2Pieces[1], clickedPiece, socket);
+      socket.emit('showSelectedPieceMovements', piecePossibleMoves);
+      socket.broadcast.to(socket.room).emit('highlightSelectedPiece', convertPiecePosition(clickedPiece));
+
+    } else if (room.turn == "red") {
+
+      socket.emit('highlightSelectedPiece', clickedPiece);
+      var piecePossibleMoves = showPossibleMoves(room.player2Pieces[0], room.player1Pieces[1], clickedPiece, socket);
+      socket.emit('showSelectedPieceMovements', piecePossibleMoves);
+      socket.broadcast.to(socket.room).emit('highlightSelectedPiece', convertPiecePosition(clickedPiece));
+
+    }
+  });
+
+  socket.on('hideMovements', function (clickedPiece) {
+    socket.emit('removeHighlightSelectedPiece', clickedPiece);
+    socket.broadcast.to(socket.room).emit('removeHighlightSelectedPiece', convertPiecePosition(clickedPiece));
+  });
+
+  socket.on('showDropPositions', function(clickedPiece) {
+    var room = Room.list[socket.room];
+    var piece;
+    if(socket.id == room.player1.id) {
+      piece = findObjectByDoubleKey(room.player2Pieces[0], 'id', 'captured', clickedPiece, true);
+      var possibleDrop = Room.showPossibleDropPositions(piece, room.player1Pieces[0], room.player2Pieces[1]);
     } else {
-      var msg = "The room is full";
-      socket.emit('error', msg); // send to user the main page
+      piece = findObjectByDoubleKey(room.player1Pieces[0], 'id', 'captured', clickedPiece, true);
+      var possibleDrop = Room.showPossibleDropPositions(piece, room.player2Pieces[0], room.player1Pieces[1]);
     }
+
+    socket.emit('showSelectedPieceMovements', possibleDrop);
+    
   });
 
-  socket.on('matchStart', function(roomName) {
-    if (Room.list[roomName].player1 != undefined && Room.list[roomName].player2 != undefined) {
-      console.log(Room.list[roomName]);
-      io.to(roomName).emit('turn', Room.list[roomName]);
-    }
+  socket.on('hideDropPositions', function() {
+
+    socket.emit('clearBoard');
+    
   });
+
   //console.log(socket.id + ": " + playerName + " " + "has connected");
 }
 
+Room.showPossibleDropPositions = function(piece, ownPieces, opponentPieces) {
+  var position;
+  var possibleDropsPositions = Array();
+  var maxRow = 9;
+  if(piece.name == "Pedina" || piece.name == "Lanciere") {
+    maxRow = 8;
+  } else if (piece.name == "Cavallo") {
+    maxRow = 7;
+  }
+
+  var myPiece;
+  
+  for(var c = 1; c < 10; c++) {
+    for(var r = 0; r < maxRow; r++) {
+      position = convertToNewPos(r, c);
+      var coordinate = position.split("-");
+      var col = coordinate[0];
+      if(piece.name == "Pedina") {
+        if(findElementByTripleKey(ownPieces, 'currentPosition', 'name', 'captured', c, 'Pedina', false) != null) {
+          break;
+        }
+      }
+      myPiece = findObjectByDoubleKey(ownPieces, 'currentPosition', 'captured', position, false);
+      if(myPiece == null && findObjectByDoubleKey(opponentPieces, 'currentPosition', 'captured', position, false) == null) {
+        possibleDropsPositions.push(position);
+      }
+    }
+  }
+
+  return possibleDropsPositions;
+}
+
+function findElementByTripleKey(array, key, key2, key3, value, value2, value3) {
+  for (var i = 0; i < array.length; i++) {
+    //console.log("Position: " + array[i][key] + " - Name: " + array[i][key2] + " - Captured: " + array[i][key3]);
+    if (array[i][key].indexOf(value) > -1 && array[i][key2] === value2 && array[i][key3] === value3) {
+      return array[i];
+    }
+    
+  }
+  return null;
+}
+
 Player.onDisconnect = function (socket) {
-  delete Player.list[socket.id];
-  delete Room.list[socket.id];
+  delete Player.list[socket.uniqueId];
+  delete Room.list[socket.room];
+  io.in(mainRoom).emit('connectedUsers', Player.list);
+  io.in(mainRoom).emit('rooms', Room.list);
+  socket.leave(socket.room);
+  socket.leave(mainRoom);
   console.log(socket.id + " has disconnected");
 }
 
 io.sockets.on('connection', function (socket) {
   socket.emit('displayPage', login); // send to user the login page
-  //socket.join(mainRoom);
 
-  socket.on('joinNewRoom', function(roomName) {
-    socket.leave(mainRoom);
-
-    socket.join(roomName);
-    console.log(roomName);
-    socket.broadcast.to(roomName).emit('joined', socket + " has joined the room");
-  });
-  
   socket.on('login', function(playerName){
     socket.emit('displayPage', page); // send to user the main page
-    
-    socket.join(mainRoom); // make user join the main room
-
-    socket.id = Math.random(); // generate a random socket id
-    SOCKET_LIST[socket.id] = socket; // insert into socket list the new player socket
+    socket.join(mainRoom);
+    socket.uniqueId = Math.random(); // generate a random socket id
+    SOCKET_LIST[socket.uniqueId] = socket; // insert into socket list the new player socket
 
     Player.onConnect(socket, playerName); // call the on connect function
     
-    socket.broadcast.to(mainRoom).emit('connectedUsers', Player.list);
+    io.in(mainRoom).emit('connectedUsers', Player.list);
 
-    socket.broadcast.to(mainRoom).emit('rooms', Room.list);
+    socket.emit('rooms', Room.list);
     
-
     // on user disconnect, remove player from socket list,
     // remove it from player list and leave the main room
     socket.on('disconnect', function () { 
-      delete SOCKET_LIST[socket.id];
+      delete SOCKET_LIST[socket.uniqueId];
       Player.onDisconnect(socket);
-      socket.leave(mainRoom);
     });
   });
 });
@@ -366,42 +500,13 @@ var movesAlfierePromosso = Array("diagDiagUpRight", "diagDiagDownRight", "diagDi
 
 var boardCoordinates = Array("A", "B", "C", "D", "E", "F", "G", "H", "I");
 
-/*var players = {};
-
-var playerArray = new Array();
-var roomsArray = new Array();
-
-var selectedPiece;
-var clickedPiecePosition;
-
-/**POSITION VARIABLES 
-var r, c;
-var yourPosition;
-var opponentPosition;
-var coordinate;
-
-var newPlayer;
-
-var newRoom = new Room("shogiRoom");
-var player1Pieces = new Array();
-var player2Pieces = new Array();
-
-function translatePlayerCoordinates(opponentPieces) {
-  for (var index in opponentPieces) {
-    opponentPieces[index].startPosition = convertPiecePosition(opponentPieces[index].startPosition);
-    opponentPieces[index].currentPosition = convertPiecePosition(opponentPieces[index].currentPosition);
-  }
-
-  return opponentPieces;
-}
-
 function convertPiecePosition(opponentPiecePosition) {
   var coordinate = opponentPiecePosition.split("-");
 
   var r = boardCoordinates[8 - boardCoordinates.indexOf(coordinate[0])];
   var c = 10 - parseInt(coordinate[1]);
 
-  piecePosition = r + "-" + c;
+  var piecePosition = r + "-" + c;
   return piecePosition;
 }
 
@@ -414,290 +519,208 @@ function extractCoordinates(position) {
 
 io.on('connect', function (socket) {
 
-  socket.on('join', function () {
-    newPlayer = new Player(socket.id);
-    newPlayer.setRoom("shogiRoom");
-
-    socket.broadcast.emit('connected', newPlayer);
-
-    if (newRoom.player1 == undefined || newRoom.player1 == null) {
-      newRoom.setPlayer1(newPlayer);
-      var piecesList = createPieces();
-      piecesList[1] = translatePlayerCoordinates(piecesList[1]);
-      //console.log(piecesList);
-      newRoom.setPlayer1Pieces(piecesList);
-      socket.emit('placePieces', piecesList);
-    } else {
-      newRoom.setPlayer2(newPlayer);
-      var piecesList = createPieces();
-      piecesList[1] = translatePlayerCoordinates(piecesList[1]);
-      newRoom.setPlayer2Pieces(piecesList);
-      socket.emit('placePieces', piecesList);
-
-    }
-
-    socket.emit('success', newPlayer);
-
-    playerArray.push(newPlayer);
-    roomsArray.push(newRoom);
-    socket.join(newRoom.roomName);
-    //console.log(newRoom);
-    if (newRoom.player1 != undefined && newRoom.player2 != undefined) {
-      socket.broadcast.to(newRoom.player1.id).emit('turn', newRoom, "your turn");
-    }
-    console.log(newPlayer.id + " has joined the room: " + newRoom.roomName);
-  });
-
-  socket.on('createRoom', function (roomName) {
-    // update player room status, to the room  he joined
-    var player = findObjectByKey(playerArray, 'id', socket.id);
-    player.setRoom(roomName);
-
-    // create a new room instance
-    var newRoom = new Room(player.id, player, roomName);
-
-    // store the room object into an array
-    roomsArray.push(newRoom);
-
-    // make client join the room
-    socket.join(newRoom.roomName);
-
-    // show outer users that a new room has been created
-    socket.broadcast.emit('newRoom', newRoom.roomName, newRoom);
-
-    // make the client enter the room
-    socket.emit('enterRoom', player, newRoom.id);
-  });
-
-  socket.on('joinRoom', function (roomName, playerName, id) {
-    // update user room status, to the room  he joined
-    var player = findObjectByKey(playerArray, 'id', socket.id);
-    var chooseRoom = findObjectByKey(roomsArray, 'id', id);
-
-    player.setRoom(chooseRoom.roomName);
-
-    // make client join the room
-    socket.join(chooseRoom.roomName);
-
-    // send message to the rooom
-    socket.broadcast.to(id).emit('roomJoined', player.playerName);
-    player.setFaction("red");
-    socket.emit('enterRoom', player, id);
-    //console.log(player);
-
-    // send pieces list to opponent        
-    chooseRoom.setPlayer(player);
-    //console.log(chooseRoom);
-    //console.log(chooseRoom.piecesList.length);
-    socket.emit('requestedPieces', chooseRoom.piecesList);
-  });
-
-  socket.on('requestPieces', function (roomId) {
-    var chooseRoom = findObjectByKey(roomsArray, 'id', roomId);
-
-    chooseRoom.setPieces(createPieces());
-    socket.emit('requestedPieces', chooseRoom.piecesList);
-    //console.log(roomsArray.length);
-    io.in(chooseRoom.roomName).emit('turn', chooseRoom);
-  });
-
-  socket.on('updatePartecipants', function (playerName, roomId) {
-    io.in(roomId).emit('showPartecipants', playerName);
-  });
-
-
-  /**GAME LOGIC***
-
-  socket.on('showMovements', function (clickedPiece, pieceIndex, room) {
-    var playersRoom = findObjectByKey(roomsArray, 'roomName', room.roomName);
-    //console.log(room.roomName);
-    if (playersRoom.turn == "black" && socket.id == playersRoom.player1.id) {
-
-      socket.emit('showSelectedPiece', clickedPiece);
-      var piecePossibleMoves = showPossibleMoves(playersRoom.player1Pieces[0], playersRoom.player2Pieces[1], pieceIndex - 1);
-      socket.emit('showSelectedPieceMovements', piecePossibleMoves);
-      socket.broadcast.to(playersRoom.roomName).emit('showSelectedPiece', convertPiecePosition(clickedPiece));
-
-    } else if (playersRoom.turn == "red" && socket.id == playersRoom.player2.id) {
-
-      socket.emit('showSelectedPiece', clickedPiece);
-      var piecePossibleMoves = showPossibleMoves(playersRoom.player2Pieces[0], playersRoom.player1Pieces[1], pieceIndex - 1);
-      socket.emit('showSelectedPieceMovements', piecePossibleMoves);
-      socket.broadcast.to(playersRoom.roomName).emit('showSelectedPiece', convertPiecePosition(clickedPiece));
-
-    }
-    //console.log(piecePossibleMoves);
-  });
-
-  socket.on('hideMovements', function (clickedPiece, room) {
-    socket.emit('hideSelectedPiece', clickedPiece);
-    socket.broadcast.to(room.roomName).emit('hideSelectedPiece', convertPiecePosition(clickedPiece));
-  });
-
-  socket.on('moveToNewPosition', function (clickedPiece, clickedPosition, room) {
-    var playersRoom = findObjectByKey(roomsArray, 'roomName', room.roomName);
+  socket.on('dropToPosition', function(pieceId, newPosition){
+    var room = Room.list[socket.room];
     var selectedPiece;
+    if (room.turn == "black") {
+
+      selectedPiece = room.player2Pieces[0][pieceId-1];
+
+      selectedPiece.drop("Player1");
+      room.player2Pieces[1][pieceId-1].drop("Player2");
+
+      selectedPiece.newPosition(newPosition); // update your piece position
+      room.player2Pieces[1][pieceId-1].newPosition(convertPiecePosition(newPosition));
+
+    } else {
+      selectedPiece = room.player1Pieces[0][pieceId-1];
+
+      selectedPiece.drop("Player1");
+      room.player1Pieces[1][pieceId-1].drop("Player2");
+
+      selectedPiece.newPosition(newPosition); // update your piece position
+      room.player1Pieces[1][pieceId-1].newPosition(convertPiecePosition(newPosition));
+    }
+
+    updateView(selectedPiece, pieceId, newPosition, socket, true);
+    updateTurns(socket);
+  });
+
+  socket.on('moveToNewPosition', function (clickedPiece, clickedPosition) {
+    var room = Room.list[socket.room];
+    var selectedPiece;
+    var selectedPieceCounterpart;
     var eatablePiece;
 
     var controlUpgrade = false;
 
-    if (playersRoom.turn == "black") {
-      selectedPiece = findObjectByDoubleKey(playersRoom.player1Pieces[0], 'currentPosition', 'captured', clickedPiece, false);
-      //console.log(selectedPiece);
-      //console.log(clickedPiece);
-      eatablePiece = findObjectByDoubleKey(playersRoom.player2Pieces[0], 'currentPosition', 'captured', convertPiecePosition(clickedPosition), false);
+    if (room.turn == "black") {
+      selectedPiece = findObjectByDoubleKey(room.player1Pieces[0], 'currentPosition', 'captured', clickedPiece, false);
+      if(selectedPiece == null) {
+        selectedPiece = findObjectByDoubleKey(room.player2Pieces[0], 'currentPosition', 'captured', clickedPiece, false);
+        selectedPieceCounterpart = findObjectByDoubleKey(room.player2Pieces[1], 'currentPosition', 'captured', convertPiecePosition(clickedPiece), false);
+      } else {
+        selectedPieceCounterpart = findObjectByDoubleKey(room.player1Pieces[1], 'currentPosition', 'captured', convertPiecePosition(clickedPiece), false);
+      }
+      eatedPiece = findObjectByDoubleKey(room.player2Pieces[1], 'currentPosition', 'captured', clickedPosition, false);
+      //console.log(eatedPiece);
+      if (eatedPiece) {
 
-      //console.log(selectedPiece);
-      if (eatablePiece) {
-        //playersRoom.player2Pieces[0][selectedPiece.id-1].newPosition(convertPiecePosition(clickedPosition));
-        playersRoom.player2Pieces[0][eatablePiece.id - 1].capture("");
-        playersRoom.player2Pieces[1][eatablePiece.id - 1].capture("");
-        socket.emit('addPieceToDrops', playersRoom, eatablePiece);
-        socket.broadcast.to(playersRoom.player2.id).emit('addOpponentPieceToDrops', playersRoom, eatablePiece);
-        if (extractCoordinates(clickedPosition) >= 6 && selectedPiece.upgraded == false && selectedPiece.upgradable == true) {
+        room.player2Pieces[0][eatedPiece.id - 1].capture(""); // capture opponent piece
+        eatedPiece.capture(""); // capture opponent piece
+
+        socket.emit('addPieceToDrops', eatedPiece); // add captured piece to your drops
+
+        socket.broadcast.to(socket.room).emit('addOpponentPieceToDrops', eatedPiece); // show captured piece to opponent drops
+
+        if ((extractCoordinates(clickedPosition) >= 6 || extractCoordinates(selectedPiece.currentPosition) >= 6) && selectedPiece.promoted == false && selectedPiece.upgradable == true) {
           if (((selectedPiece.pieceName == "Pedina" || selectedPiece.pieceName == "Lanciere") && extractCoordinates(clickedPosition) == 8) || (selectedPiece.pieceName == "Cavallo" && extractCoordinates(clickedPosition) >= 7)) {
-            upgradePiece(room, selectedPiece, clickedPiece, clickedPosition, socket, true);
+            upgradePiece(selectedPiece, clickedPiece, clickedPosition, socket, true, true);
           } else {
-            socket.emit('wantToUpgrade', playersRoom, selectedPiece, clickedPiece, clickedPosition);
+            socket.emit('wantToUpgrade', selectedPiece, clickedPiece, clickedPosition);
           }
           controlUpgrade = true;
-        } else if (extractCoordinates(selectedPiece.currentPosition) >= 6 && selectedPiece.upgraded == false && selectedPiece.upgradable == true) {
-          socket.emit('wantToUpgrade', playersRoom, selectedPiece, clickedPiece, clickedPosition);
-          controlUpgrade = true;
         }
-        //console.log(eatablePiece);
-      } else if (extractCoordinates(clickedPosition) >= 6 && selectedPiece.upgraded == false && selectedPiece.upgradable == true) {
+
+      } else if ((extractCoordinates(clickedPosition) >= 6 || extractCoordinates(selectedPiece.currentPosition) >= 6) && selectedPiece.promoted == false && selectedPiece.upgradable == true) {
         if (((selectedPiece.pieceName == "Pedina" || selectedPiece.pieceName == "Lanciere") && extractCoordinates(clickedPosition) == 8) || (selectedPiece.pieceName == "Cavallo" && extractCoordinates(clickedPosition) >= 7)) {
-          upgradePiece(room, selectedPiece, clickedPiece, clickedPosition, socket, true);
+          upgradePiece(selectedPiece, clickedPiece, clickedPosition, socket, true, true);
         } else {
-          socket.emit('wantToUpgrade', playersRoom, selectedPiece, clickedPiece, clickedPosition);
+          socket.emit('wantToUpgrade', selectedPiece, clickedPiece, clickedPosition);
         }
-        controlUpgrade = true;
-      } else if (extractCoordinates(selectedPiece.currentPosition) >= 6 && selectedPiece.upgraded == false && selectedPiece.upgradable == true) {
-        socket.emit('wantToUpgrade', playersRoom, selectedPiece, clickedPiece, clickedPosition);
         controlUpgrade = true;
       }
 
-      playersRoom.player1Pieces[0][selectedPiece.id - 1].newPosition(clickedPosition);
-      playersRoom.player1Pieces[1][selectedPiece.id - 1].newPosition(convertPiecePosition(clickedPosition));
-      //console.log(playersRoom.player1Pieces[0][selectedPiece.id-1]);
+      selectedPiece.newPosition(clickedPosition); // update your piece position
+      selectedPieceCounterpart.newPosition(convertPiecePosition(clickedPosition)); // update your piece position
     } else {
-      selectedPiece = findObjectByDoubleKey(playersRoom.player2Pieces[0], 'currentPosition', 'captured', clickedPiece, false);
-      eatablePiece = findObjectByDoubleKey(playersRoom.player1Pieces[0], 'currentPosition', 'captured', convertPiecePosition(clickedPosition), false);
+      selectedPiece = findObjectByDoubleKey(room.player2Pieces[0], 'currentPosition', 'captured', clickedPiece, false);
+      if(selectedPiece == null) {
+        selectedPiece = findObjectByDoubleKey(room.player1Pieces[0], 'currentPosition', 'captured', clickedPiece, false);
+        selectedPieceCounterpart = findObjectByDoubleKey(room.player1Pieces[1], 'currentPosition', 'captured', convertPiecePosition(clickedPiece), false);
+      } else {
+        selectedPieceCounterpart = findObjectByDoubleKey(room.player2Pieces[1], 'currentPosition', 'captured', convertPiecePosition(clickedPiece), false);
+      }
 
-      if (eatablePiece) {
+      eatedPiece = findObjectByDoubleKey(room.player1Pieces[1], 'currentPosition', 'captured', clickedPosition, false);
+      //console.log(eatedPiece);
+      if (eatedPiece) {
         //playersRoom.player2Pieces[0][selectedPiece.id-1].newPosition(convertPiecePosition(clickedPosition));
-        playersRoom.player1Pieces[0][eatablePiece.id - 1].capture("");
-        playersRoom.player1Pieces[1][eatablePiece.id - 1].capture("");
-        socket.emit('addPieceToDrops', playersRoom, eatablePiece);
-        socket.broadcast.to(playersRoom.player1.id).emit('addOpponentPieceToDrops', playersRoom, eatablePiece);
-        if (extractCoordinates(clickedPosition) >= 6 && selectedPiece.upgraded == false && selectedPiece.upgradable == true) {
+        room.player1Pieces[0][eatedPiece.id - 1].capture("");
+        room.player1Pieces[1][eatedPiece.id - 1].capture("");
+        socket.emit('addPieceToDrops', eatedPiece);
+        socket.broadcast.to(room.player1.id).emit('addOpponentPieceToDrops', eatedPiece);
+        if (extractCoordinates(clickedPosition) >= 6 && selectedPiece.promoted == false && selectedPiece.upgradable == true) {
           if (((selectedPiece.pieceName == "Pedina" || selectedPiece.pieceName == "Lanciere") && extractCoordinates(clickedPosition) == 8) || (selectedPiece.pieceName == "Cavallo" && extractCoordinates(clickedPosition) >= 7)) {
-            upgradePiece(room, selectedPiece, clickedPiece, clickedPosition, socket, true);
+            upgradePiece(selectedPiece, clickedPiece, clickedPosition, socket, true, true);
           } else {
-            socket.emit('wantToUpgrade', playersRoom, selectedPiece, clickedPiece, clickedPosition);
+            socket.emit('wantToUpgrade', selectedPiece, clickedPiece, clickedPosition);
           }
           controlUpgrade = true;
         } else if (extractCoordinates(selectedPiece.currentPosition) >= 6 && selectedPiece.upgraded == false && selectedPiece.upgradable == true) {
-          socket.emit('wantToUpgrade', playersRoom, selectedPiece, clickedPiece, clickedPosition);
+          socket.emit('wantToUpgrade', selectedPiece, clickedPiece, clickedPosition);
           controlUpgrade = true;
         }
         //console.log(eatablePiece);
-      } else if (extractCoordinates(clickedPosition) >= 6 && selectedPiece.upgraded == false && selectedPiece.upgradable == true) {
+      } else if (extractCoordinates(clickedPosition) >= 6 && selectedPiece.promoted == false && selectedPiece.upgradable == true) {
         if (((selectedPiece.pieceName == "Pedina" || selectedPiece.pieceName == "Lanciere") && extractCoordinates(clickedPosition) == 8) || (selectedPiece.pieceName == "Cavallo" && extractCoordinates(clickedPosition) >= 7)) {
-          upgradePiece(room, selectedPiece, clickedPiece, clickedPosition, socket, true);
+          upgradePiece(selectedPiece, clickedPiece, clickedPosition, socket, true, true);
         } else {
-          socket.emit('wantToUpgrade', playersRoom, selectedPiece, clickedPiece, clickedPosition);
+          socket.emit('wantToUpgrade', selectedPiece, clickedPiece, clickedPosition);
         }
         controlUpgrade = true;
-      } else if (extractCoordinates(selectedPiece.currentPosition) >= 6 && selectedPiece.upgraded == false && selectedPiece.upgradable == true) {
-        socket.emit('wantToUpgrade', playersRoom, selectedPiece, clickedPiece, clickedPosition);
+      } else if (extractCoordinates(selectedPiece.currentPosition) >= 6 && selectedPiece.promoted == false && selectedPiece.upgradable == true) {
+        socket.emit('wantToUpgrade', selectedPiece, clickedPiece, clickedPosition);
         controlUpgrade = true;
       }
 
-      playersRoom.player2Pieces[0][selectedPiece.id - 1].newPosition(clickedPosition);
-      playersRoom.player2Pieces[1][selectedPiece.id - 1].newPosition(convertPiecePosition(clickedPosition));
+      selectedPiece.newPosition(clickedPosition);
+      selectedPieceCounterpart.newPosition(convertPiecePosition(clickedPosition));
     }
 
-    updateView(playersRoom, selectedPiece, clickedPiece, clickedPosition, socket);
+    updateView(selectedPiece, clickedPiece, clickedPosition, socket, false);
     if (controlUpgrade == false) {
-      updateTurns(playersRoom, socket);
+      updateTurns(socket);
     }
   });
 
-  socket.on('showDropPositions', function (pieceId, room) {
-    var playersRoom = findObjectByKey(roomsArray, 'roomName', room.roomName);
-    console.log(pieceId);
-    if (playersRoom.turn == "black" && socket.id == playersRoom.player1.id) {
+  socket.on('upgrade', function (selectedPiece, clickedPiece, clickedPosition, choice, must) {
 
-      var piecePossibleMoves = showPossibleMoves(playersRoom.player2Pieces[0], playersRoom.player1Pieces[1], pieceId - 1);
-      socket.emit('showSelectedPieceMovements', piecePossibleMoves);
+    upgradePiece(selectedPiece, clickedPiece, clickedPosition, socket, choice, must);
 
-    } else if (playersRoom.turn == "red" && socket.id == playersRoom.player2.id) {
-
-      var piecePossibleMoves = showPossibleMoves(playersRoom.player1Pieces[0], playersRoom.player2Pieces[1], pieceId - 1);
-      socket.emit('showSelectedPieceMovements', piecePossibleMoves);
-
-    }
-    //console.log(piecePossibleMoves);
-  });
-
-  socket.on('upgrade', function (room, selectedPiece, clickedPiece, clickedPosition, choice) {
-
-    upgradePiece(room, selectedPiece, clickedPiece, clickedPosition, socket, choice);
-
-  });
-
-  socket.on('error', function () {
-    socket.emit('error', 'an error has occured');
   });
 });
 
-function upgradePiece(room, selectedPiece, clickedPiece, clickedPosition, socket, choice) {
-  var playersRoom = findObjectByKey(roomsArray, 'roomName', room.roomName);
-  if (playersRoom.turn == "black") {
-    if (choice == true) {
-      playersRoom.player1Pieces[0][selectedPiece.id - 1].promote();
-      playersRoom.player1Pieces[1][selectedPiece.id - 1].promote();
-      //console.log(playersRoom.player1Pieces[0][selectedPiece.id-1]);
-      selectedPiece = playersRoom.player1Pieces[0][selectedPiece.id - 1];
+function upgradePiece(selectedPiece, clickedPiece, clickedPosition, socket, choice, must) {
+  var room = Room.list[socket.room];
+  var piece, pieceCounterpart;
+    if (room.turn == "black") {
+      if (choice == true) {
+        piece = findObjectByDoubleKey(room.player1Pieces[0], 'currentPosition', 'captured', clickedPosition, false);
+        pieceCounterpart = findObjectByDoubleKey(room.player1Pieces[1], 'currentPosition', 'captured', convertPiecePosition(clickedPosition), false);
+        if(piece == null && must == false) {
+          piece = findObjectByDoubleKey(room.player2Pieces[0], 'currentPosition', 'captured', clickedPosition, false);
+          pieceCounterpart = findObjectByDoubleKey(room.player2Pieces[1], 'currentPosition', 'captured', convertPiecePosition(clickedPosition), false);
+        }
+
+        if(piece == null && must == true) {
+          piece = findObjectByDoubleKey(room.player2Pieces[0], 'currentPosition', 'captured', clickedPiece, false);
+          pieceCounterpart = findObjectByDoubleKey(room.player2Pieces[1], 'currentPosition', 'captured', convertPiecePosition(clickedPiece), false);
+        }
+        if(piece == null && must == true) {
+          piece = findObjectByDoubleKey(room.player1Pieces[0], 'currentPosition', 'captured', clickedPiece, false);
+          pieceCounterpart = findObjectByDoubleKey(room.player1Pieces[1], 'currentPosition', 'captured', convertPiecePosition(clickedPiece), false);
+        }
+
+        piece.promote();
+        pieceCounterpart.promote();
+      }
+    } else {
+      if (choice == true) {
+        piece = findObjectByDoubleKey(room.player2Pieces[0], 'currentPosition', 'captured', clickedPosition, false);
+        if(piece == null && must == false) {
+          piece = findObjectByDoubleKey(room.player1Pieces[0], 'currentPosition', 'captured', clickedPosition, false);
+          pieceCounterpart = findObjectByDoubleKey(room.player1Pieces[1], 'currentPosition', 'captured', convertPiecePosition(clickedPosition), false);
+        } else if(piece != null && must == false) {
+          pieceCounterpart = findObjectByDoubleKey(room.player2Pieces[1], 'currentPosition', 'captured', convertPiecePosition(clickedPosition), false);
+        }
+
+        if(piece == null && must == true) {
+          piece = findObjectByDoubleKey(room.player2Pieces[0], 'currentPosition', 'captured', clickedPiece, false);
+          pieceCounterpart = findObjectByDoubleKey(room.player2Pieces[1], 'currentPosition', 'captured', convertPiecePosition(clickedPiece), false);
+        }
+        
+        if(piece == null && must == true) {
+          piece = findObjectByDoubleKey(room.player1Pieces[0], 'currentPosition', 'captured', clickedPiece, false);
+          pieceCounterpart = findObjectByDoubleKey(room.player1Pieces[1], 'currentPosition', 'captured', convertPiecePosition(clickedPiece), false);
+        }
+        piece.promote();
+        pieceCounterpart.promote();
+      }
     }
+
+    updateView(piece, clickedPosition, clickedPosition, socket, false);
+    updateTurns(socket);
+}
+
+function updateView(selectedPiece, clickedPiece, clickedPosition, socket, dropping) {
+  var room = Room.list[socket.room];
+
+  socket.emit('updatePlayerView', selectedPiece, clickedPiece, clickedPosition, dropping);
+  socket.broadcast.to(socket.room).emit('updateOpponentView', selectedPiece, convertPiecePosition(clickedPiece), convertPiecePosition(clickedPosition), dropping);
+
+}
+
+function updateTurns(socket) {
+  var room = Room.list[socket.room];
+  if (room.turn == "red") {
+    room.updateTurn("black");
   } else {
-    if (choice == true) {
-      playersRoom.player2Pieces[0][selectedPiece.id - 1].promote();
-      playersRoom.player2Pieces[1][selectedPiece.id - 1].promote();
-      //console.log(playersRoom.player2Pieces[0][selectedPiece.id-1]);
-      selectedPiece = playersRoom.player2Pieces[0][selectedPiece.id - 1];
-    }
+    room.updateTurn("red");
   }
-  //socket.emit('updatePlayerView', selectedPiece, clickedPosition, clickedPosition);
-  //socket.broadcast.to(playersRoom.roomName).emit('updateOpponentView', selectedPiece, convertPiecePosition(clickedPosition), convertPiecePosition(clickedPosition));
-  updateView(playersRoom, selectedPiece, clickedPosition, clickedPosition, socket);
-  updateTurns(playersRoom, socket);
+  socket.emit('turn', "");
+  socket.broadcast.to(socket.room).emit('turn', "your turn");
 }
-
-function updateView(room, selectedPiece, clickedPiece, clickedPosition, socket) {
-  var playersRoom = findObjectByKey(roomsArray, 'roomName', room.roomName);
-
-  socket.emit('updatePlayerView', selectedPiece, clickedPiece, clickedPosition);
-  socket.broadcast.to(playersRoom.roomName).emit('updateOpponentView', selectedPiece, convertPiecePosition(clickedPiece), convertPiecePosition(clickedPosition));
-
-}
-
-function updateTurns(room, socket) {
-  var playersRoom = findObjectByKey(roomsArray, 'roomName', room.roomName);
-  if (playersRoom.turn == "red") {
-    playersRoom.updateTurn("black");
-    socket.broadcast.to(playersRoom.player1.id).emit('turn', playersRoom, "your turn");
-  } else {
-    playersRoom.updateTurn("red");
-    socket.broadcast.to(playersRoom.player2.id).emit('turn', playersRoom, "your turn");
-  }
-}
-
-/*setInterval(function() {
-  console.log(roomsArray.length);
-}, 1000);*
 
 function findObjectByKey(array, key, value) {
   for (var i = 0; i < array.length; i++) {
@@ -708,139 +731,102 @@ function findObjectByKey(array, key, value) {
   return null;
 }
 
-function showPossibleMoves(player1Pieces, player2Pieces, index) {
-  var possibleMovesArray = new Array();
-  var selectedPieceName = player1Pieces[index].pieceName;
-  if (player1Pieces[index].upgraded == true) {
-    selectedPieceName = player1Pieces[index].pieceUpgradedName;
+function showPossibleMoves(ownPieces, opponentPieces, selectedPiece, socket) {
+  var piece = findObjectByDoubleKey(ownPieces, 'currentPosition', 'captured', selectedPiece, false);
+  if (piece == null && Room.list[socket.room].turn == "black") {
+    piece = findObjectByDoubleKey(Room.list[socket.room].player2Pieces[0], 'currentPosition', 'captured', selectedPiece, false);
+  } else if (piece == null && Room.list[socket.room].turn == "red") {
+    piece = findObjectByDoubleKey(Room.list[socket.room].player1Pieces[0], 'currentPosition', 'captured', selectedPiece, false);
   }
-  switch (selectedPieceName) {
-    case 'Pedina':
-      possibleMoves(player1Pieces, player2Pieces, index, movesPedina, possibleMovesArray);
-      break;
-    case 'PedinaPromossa':
-      possibleMoves(player1Pieces, player2Pieces, index, movesGenOro, possibleMovesArray);
-      break;
-    case 'Alfiere':
-      possibleMoves(player1Pieces, player2Pieces, index, movesAlfiere, possibleMovesArray);
-      break;
-    case 'AlfierePromosso':
-      possibleMoves(player1Pieces, player2Pieces, index, movesAlfierePromosso, possibleMovesArray);
-      break;
-    case 'Torre':
-      possibleMoves(player1Pieces, player2Pieces, index, movesTorre, possibleMovesArray);
-      break;
-    case 'TorrePromossa':
-      possibleMoves(player1Pieces, player2Pieces, index, movesTorrePromossa, possibleMovesArray);
-      break;
-    case 'Lanciere':
-      possibleMoves(player1Pieces, player2Pieces, index, movesLanciere, possibleMovesArray);
-      break;
-    case 'LancierePromosso':
-      possibleMoves(player1Pieces, player2Pieces, index, movesGenOro, possibleMovesArray);
-      break;
-    case 'Cavallo':
-      possibleMoves(player1Pieces, player2Pieces, index, movesCavallo, possibleMovesArray);
-      break;
-    case 'CavalloPromosso':
-      possibleMoves(player1Pieces, player2Pieces, index, movesGenOro, possibleMovesArray);
-      break;
-    case 'GenArg':
-      possibleMoves(player1Pieces, player2Pieces, index, movesGenArg, possibleMovesArray);
-      break;
-    case 'GenArgPromosso':
-      possibleMoves(player1Pieces, player2Pieces, index, movesGenOro, possibleMovesArray);
-      break;
-    case 'GenOro':
-      possibleMoves(player1Pieces, player2Pieces, index, movesGenOro, possibleMovesArray);
-      break;
-    case 'Re':
-      possibleMoves(player1Pieces, player2Pieces, index, movesRe, possibleMovesArray);
-      break;
-    default:
-      alert('Nobody Wins!');
+  var possibleMovesArray = new Array();
+  var selectedPieceName = piece.name;
+
+  if (piece.promoted == true) {
+    possibleMoves(ownPieces, opponentPieces, piece, piece.pieceUpgradedMoves, possibleMovesArray);
+  } else {
+    possibleMoves(ownPieces, opponentPieces, piece, piece.pieceMoves, possibleMovesArray);
   }
 
   return possibleMovesArray;
 }
 
-function possibleMoves(player1Pieces, player2Pieces, index, pieceMoveSet, possibleMovesArray) {
+function possibleMoves(ownPieces, opponentPieces, piece, pieceMoveSet, possibleMovesArray) {
 
   for (var x = 0; x < pieceMoveSet.length; x++) {
-    move = pieceMoveSet[x];
+    var move = pieceMoveSet[x];
     switch (move) {
       case 'diagUpRight':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, 1, 1, false);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, 1, 1, false);
         break;
       case 'right':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, 0, 1, false);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, 0, 1, false);
         break;
       case 'diagDownRight':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, -1, 1, false);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, -1, 1, false);
         break;
       case 'down':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, -1, 0, false);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, -1, 0, false);
         break;
       case 'diagDownLeft':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, -1, -1, false);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, -1, -1, false);
         break;
       case 'left':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, 0, -1, false);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, 0, -1, false);
         break;
       case 'diagUpLeft':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, 1, -1, false);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, 1, -1, false);
         break;
       case 'upUp':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, 1, 0, true);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, 1, 0, true);
         break;
       case 'rightRight':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, 0, 1, true);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, 0, 1, true);
         break;
       case 'downDown':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, -1, 0, true);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, -1, 0, true);
         break;
       case 'leftLeft':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, 0, -1, true);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, 0, -1, true);
         break;
       case 'leftUp':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, 2, -1, false);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, 2, -1, false);
         break;
       case 'rightUp':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, 2, 1, false);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, 2, 1, false);
         break;
       case 'diagDiagUpLeft':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, 1, -1, true);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, 1, -1, true);
         break;
       case 'diagDiagUpRight':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, 1, 1, true);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, 1, 1, true);
         break;
       case 'diagDiagDownLeft':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, -1, -1, true);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, -1, -1, true);
         break;
       case 'diagDiagDownRight':
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, -1, 1, true);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, -1, 1, true);
         break;
       default:
-        setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, 1, 0, false);
+        setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, 1, 0, false);
     }
   }
 }
 
 function convertToNewPos(position, c) {
-  r = boardCoordinates[position];
+  var r = boardCoordinates[position];
 
   var newPos = r + "-" + c;
   return newPos;
 }
 
-function setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, y, x, special) {
+function setMovement(ownPieces, opponentPieces, piece, possibleMovesArray, y, x, special) {
 
-  var coordinate = player1Pieces[index].currentPosition.split("-");
+  var coordinate = piece.currentPosition.split("-");
 
   var r = boardCoordinates.indexOf(coordinate[0]) + y;
   var c = parseInt(coordinate[1]) + x;
 
-  piecePosition = r + "-" + c;
+  var piecePosition = r + "-" + c;
   var occupied;
   var newMove;
   if (special) {
@@ -849,7 +835,7 @@ function setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, y,
     if (y == -1 && x == 0) {
       for (; r >= 0; r--) {
         newMove = convertToNewPos(r, c);
-        occupied = checkIfOccupied(player1Pieces, player2Pieces, newMove);
+        occupied = checkIfOccupied(ownPieces, opponentPieces, newMove);
         if (occupied != true) {
           possibleMovesArray.push(newMove);
           if (occupied == "eat") {
@@ -862,7 +848,7 @@ function setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, y,
     } else if (y == 0 && x == 1) {
       for (; c <= 9; c++) {
         newMove = convertToNewPos(r, c);
-        occupied = checkIfOccupied(player1Pieces, player2Pieces, newMove);
+        occupied = checkIfOccupied(ownPieces, opponentPieces, newMove);
         if (occupied != true) {
           possibleMovesArray.push(newMove);
           if (occupied == "eat") {
@@ -875,7 +861,7 @@ function setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, y,
     } else if (y == 0 && x == -1) {
       for (; c > 0; c--) {
         newMove = convertToNewPos(r, c);
-        occupied = checkIfOccupied(player1Pieces, player2Pieces, newMove);
+        occupied = checkIfOccupied(ownPieces, opponentPieces, newMove);
         if (occupied != true) {
           possibleMovesArray.push(newMove);
           if (occupied == "eat") {
@@ -888,7 +874,7 @@ function setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, y,
     } else if (y == 1 && x == 0) {
       for (; r <= 9; r++) {
         newMove = convertToNewPos(r, c);
-        occupied = checkIfOccupied(player1Pieces, player2Pieces, newMove);
+        occupied = checkIfOccupied(ownPieces, opponentPieces, newMove);
         if (occupied != true) {
           possibleMovesArray.push(newMove);
           if (occupied == "eat") {
@@ -905,7 +891,7 @@ function setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, y,
         oldMoveC++;
         newMove = convertToNewPos(oldMoveR, oldMoveC);
         //console.log(newMove);
-        occupied = checkIfOccupied(player1Pieces, player2Pieces, newMove);
+        occupied = checkIfOccupied(ownPieces, opponentPieces, newMove);
         if (occupied != true) {
           possibleMovesArray.push(newMove);
           if (occupied == "eat") {
@@ -924,7 +910,7 @@ function setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, y,
         }
         newMove = convertToNewPos(oldMoveR, oldMoveC);
         //console.log(newMove);
-        occupied = checkIfOccupied(player1Pieces, player2Pieces, newMove);
+        occupied = checkIfOccupied(ownPieces, opponentPieces, newMove);
         if (occupied != true) {
           possibleMovesArray.push(newMove);
           if (occupied == "eat") {
@@ -943,7 +929,7 @@ function setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, y,
         }
         newMove = convertToNewPos(oldMoveR, oldMoveC);
         //console.log(oldMoveR + "-" + oldMoveC);
-        occupied = checkIfOccupied(player1Pieces, player2Pieces, newMove);
+        occupied = checkIfOccupied(ownPieces, opponentPieces, newMove);
         if (occupied != true) {
           possibleMovesArray.push(newMove);
           if (occupied == "eat") {
@@ -962,7 +948,7 @@ function setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, y,
         }
         newMove = convertToNewPos(oldMoveR, oldMoveC);
         //console.log(newMove);
-        occupied = checkIfOccupied(player1Pieces, player2Pieces, newMove);
+        occupied = checkIfOccupied(ownPieces, opponentPieces, newMove);
         if (occupied != true) {
           possibleMovesArray.push(newMove);
           if (occupied == "eat") {
@@ -975,28 +961,24 @@ function setMovement(player1Pieces, player2Pieces, index, possibleMovesArray, y,
     }
   } else {
     newMove = convertToNewPos(r, c);
-    if (checkIfOccupied(player1Pieces, player2Pieces, newMove) == false || checkIfOccupied(player1Pieces, player2Pieces, newMove) == "eat") {
+    if (checkIfOccupied(ownPieces, opponentPieces, newMove) == false || checkIfOccupied(ownPieces, opponentPieces, newMove) == "eat") {
       possibleMovesArray.push(newMove);
     }
   }
 }
 
-function checkIfOccupied(player1Pieces, player2Pieces, movement) {
-  var checkPlayer1Piece = findObjectByDoubleKey(player1Pieces, 'currentPosition', 'captured', movement, false);
-  var checkPlayer2Piece = findObjectByDoubleKey(player2Pieces, 'currentPosition', 'captured', movement, false);
-  //console.log("Movement: " + movement);
+function checkIfOccupied(ownPieces, opponentPieces, position) {
+  var checkOwnPiece = findObjectByDoubleKey(ownPieces, 'currentPosition', 'captured', position, false);
+  var checkOpponentPiece = findObjectByDoubleKey(opponentPieces, 'currentPosition', 'captured', position, false);
 
-
-  if (checkPlayer1Piece) {
-    if (checkPlayer1Piece.property == "player1") {
+  if (checkOwnPiece) {
+    if (checkOwnPiece.property == "player1") {
       return true;
     }
-  } else if (checkPlayer2Piece) {
-    //console.log("piece: " + checkPlayer2Piece.pieceName + " position: " + checkPlayer2Piece.currentPosition);
-    if (checkPlayer2Piece.property == "player2") {
+  } else if (checkOpponentPiece) {
+    if (checkOpponentPiece.property == "player2") {
       return "eat";
     }
-    //return true;
   }
 
   return false;
@@ -1009,7 +991,7 @@ function findObjectByDoubleKey(array, key, key2, value, value2) {
     }
   }
   return null;
-}*/
+}
 
 function createPieces() {
   var player1Pieces = [];
@@ -1105,68 +1087,3 @@ function createPieces() {
 
   return pieces;
 }
-
-/*
-function Player(id) {
-  this.id = id;
-  this.room;
-  this.playing = true;
-  this.faction;
-
-  this.setRoom = function (value) {
-    this.room = value;
-  }
-
-  this.setFaction = function (value) {
-    this.faction = value;
-  }
-  return this;
-}
-
-function Room(roomName) {
-  this.roomName = roomName;
-  this.player1;
-  this.player2;
-  this.gameStarted = false;
-  this.playing = false;
-  this.piecesList;
-  this.turn = "black";
-  this.player1Pieces;
-  this.player2Pieces;
-
-  this.updateTurn = function (value) {
-    this.turn = value;
-  }
-
-  this.endGame = function () {
-    this.playing = false;
-    this.turn = false;
-  }
-
-  this.setPieces = function (value) {
-    this.piecesList = value;
-  }
-
-  this.startGame = function (value) {
-    this.playing = true;
-  }
-
-  this.setPlayer1 = function (value) {
-    this.player1 = value;
-    this.player1.setFaction("black");
-  }
-
-  this.setPlayer2 = function (value) {
-    this.player2 = value;
-    this.player2.setFaction("red");
-  }
-
-  this.setPlayer1Pieces = function (value) {
-    this.player1Pieces = value;
-  }
-
-  this.setPlayer2Pieces = function (value) {
-    this.player2Pieces = value;
-  }
-  return this;
-}*/
