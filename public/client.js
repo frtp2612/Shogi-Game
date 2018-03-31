@@ -1,6 +1,6 @@
 var socket = io();
 
-const container = document.getElementById('container');
+const container = document.getElementById("container");
 const boardCoordinates = Array("A", "B", "C", "D", "E", "F", "G", "H", "I");
 var roomName;
 var possibleMoves;
@@ -17,16 +17,44 @@ function convertPosition(position) {
 
 $(document).ready(function(){
     // HANDLE CLICK EVENTS
-    $(document).on('click', '#loginButton', function(){
-        var username = $('input').val();
-        console.log(username);
+    $(document).on("click", "#loginButton", function(){
+        var username = $("input").val();
         if(username != "") {
             socket.emit("login", username);
         }
     });
 
-    $(document).on('click', '#createRoomButton', function(){
-        var roomName = $('.roomName').val();
+    $(document).on("click", "#registerButton", function(){
+        var username = $("input.username").val();
+        var email = $("input.email").val();
+        var password = $("input.password").val();
+        if(username != "" && email != "" && password != "") {
+            socket.emit("register", username, password, email);
+        }
+    });
+
+    $(document).on("click", "a.register", function(){
+        socket.emit("changePage", "register");
+    });
+
+    $(document).on("click", "a.forgot", function(){
+        socket.emit("changePage", "forgot");
+    });
+
+    $(document).on("click", "a.login", function(){
+        socket.emit("changePage", "login");
+    });
+
+    $(document).on("click", ".rules", function() {
+        socket.emit("rules");
+    });
+
+    $(document).on("click", ".close", function() {
+        $(".modal").remove();
+    });
+
+    $(document).on("click", "#createRoomButton", function(){
+        var roomName = $(".roomName").val();
         //console.log(roomName);
         if(roomName != "") {
             //socket.emit("joinNewRoom", roomName);
@@ -34,8 +62,8 @@ $(document).ready(function(){
         }
     });
 
-    $(document).on('click', '#joinRoomButton', function(){
-        var roomName = $(this).attr('value');
+    $(document).on("click", "#joinRoomButton", function(){
+        var roomName = $(this).attr("value");
         //console.log(roomName);
         if(roomName != "") {
             socket.emit("joinRoom", roomName);
@@ -43,60 +71,82 @@ $(document).ready(function(){
         }
     });
 
-    $(document).on('click', '#startMatchButton', function(){
+    $(document).on("click", "#startMatchButton", function(){
         socket.emit("matchStart");
     });
 
-    socket.on('turn', function(msg) {
+    $(document).on("click", "#quitMatchButton", function(){
+        $(".bottom-bar").remove();
+        socket.emit("quit");
+    });
+
+    $(document).on("click", "#surrenderButton", function(){
+        socket.emit("surrender");
+    });
+
+    $(document).on("click", "#destroyRoomButton", function(){
+        socket.emit("destroy");
+    });
+
+    socket.on("roomAlreadyExists", function(roomName) {
+        alert("The room: " + roomName + " already exists. Please choose another name.");
+    });
+
+    socket.on("abandon", function() {
+        socket.emit("abandon");
+    });
+
+    socket.on("turn", function(msg) {
         var moving = false;
         var dropping = false;
         var selectedPiece;
 
         if(msg == "your turn") {
 
-            console.log("your turn");
+            $(".turn").text(msg);
 
-            $('td').bind('click');
-            $('#capturedBoard.own').bind('click');
+            $("td").bind("click");
+            $("#capturedBoard.own").bind("click");
 
-            $("td").on('click', function( event ) {
+            $("td").on("click", function( event ) {
 
                 if(moving == false && dropping == false) {
-                    selectedPiece = $(this).attr('data-name');
-                    //console.log(selectedPiece);
-                    socket.emit("movements", selectedPiece);
-                    moving = true;
+                    if($(this).children().length > 0) {
+                        if($('> img', this).hasClass('own')) {
+                            selectedPiece = $(this).attr("data-name");
+                            socket.emit("movements", selectedPiece);
+                            moving = true;
+                        }
+                    }
                 } else if(moving == true && dropping == false){
-                    var clickedPosition = $(this).attr('data-name');
+                    var clickedPosition = $(this).attr("data-name");
                     if(selectedPiece != clickedPosition) {
                         if(possibleMoves != undefined && jQuery.inArray(clickedPosition, possibleMoves) > -1){
                             socket.emit("move", selectedPiece, clickedPosition);
                             socket.emit("hideMovements", selectedPiece);
+                            moving = false;
                         }
-                        moving = false;
-                    } else {
+                    } else if(selectedPiece == clickedPosition) {
                         socket.emit("hideMovements", selectedPiece);
                         moving = false;
                     }
                 }
 
                 if(dropping == true && moving == false) {
-                    var clickedPosition = $(this).attr('data-name');
-                    if(selectedPiece != clickedPosition && !$("[data-name=\"" + clickedPosition + "\"]").hasClass('own')) {
+                    var clickedPosition = $(this).attr("data-name");
+                    if(selectedPiece != clickedPosition && !$("[data-name=\"" + clickedPosition + "\"]").hasClass("own")) {
                         if(possibleMoves != undefined && jQuery.inArray(clickedPosition, possibleMoves) > -1) {
                             socket.emit("drop", selectedPiece, clickedPosition);
                             socket.emit("hideDropPositions", selectedPiece);
                             dropping = false;
                         }
                     } else {
-                        console.log('you can t move on your own pieces');
                     }
                 }
             });
     
-            $( "#capturedBoard.own" ).on('click', 'li', function( event ) {
-                //event.stopPropagation();
-                selectedPiece = $(this).attr('data-name');
+            $( "#capturedBoard.own" ).on("click", "li", function( event ) {
+                selectedPiece = $(this).attr("data-name");
                 if(moving == false && dropping == false) {
                     socket.emit("showDrop", selectedPiece);
                     dropping = true;
@@ -107,24 +157,24 @@ $(document).ready(function(){
             });
         } else {
 
-            $('td').unbind('click');
-            $('#capturedBoard.own').unbind('click');
+            $("td").unbind("click");
+            $("#capturedBoard.own").unbind("click");
 
-            console.log("it's your opponent's turn");
+            $(".turn").text("Wait for your opponent to move...");
 
         }
     });
 
     // SOCKET ACTIONS
-    socket.on('showRoom', function(roomName) {
-        $('.rooms > ul').append("<li>" + roomName + "<button id='joinRoomButton' value='" + roomName + "'>Join Room</button></li>");
+    socket.on("showRoom", function(roomName) {
+        $(".rooms > ul").append("<li>" + roomName + "<button id='joinRoomButton' value='" + roomName + "'>Join Room</button></li>");
     });
 
-    socket.on('displayPage', function(pageContent) {
+    socket.on("displayPage", function(pageContent) {
         $(container).html(pageContent);
     });
 
-    socket.on('connectedUsers', function(playersList) {
+    socket.on("connectedUsers", function(playersList) {
         //console.log(playersList);
         var users = "";
         for(var i in playersList) {
@@ -135,10 +185,10 @@ $(document).ready(function(){
             }
         }
 
-        $('.connectedUsers > ul').html(users);
+        $(".connectedUsers > ul").html(users);
     });
 
-    socket.on('rooms', function(roomsList, socketRoom) {
+    socket.on("rooms", function(roomsList, socketRoom) {
         var rooms = "";
         for(var i in roomsList) {
             if(roomsList[i].connectedUsers < 2) {
@@ -148,11 +198,30 @@ $(document).ready(function(){
             }
         }
 
-        $('.rooms > ul').html(rooms);
+        $(".rooms > ul").html(rooms);
     });
 
+    socket.on("displayRules", function(element) {
+        $("body").append($(element));
+    });
     /*****GAME ACTIONS *******/
-    socket.on('displayPieces', function(piecesList) {
+
+    socket.on("roomDestroyed", function() {
+        $(".modal").remove();
+        $(".bottom-bar").remove();
+        alert("The room you were inside does not exist anymore. The creator has quit the room. You will be redirected to the main page.");
+    });
+
+    socket.on("roomAbandoned", function() {
+        $(".modal").remove();
+        alert("Your opponent has left the room.");
+    });
+
+    socket.on('updateTopBar', function(who, player) {
+        $(".top-bar > ." + who).text(player);
+    });
+
+    socket.on("displayPieces", function(piecesList) {
         //console.log(piecesList[0]);
         var piece;
         //console.log(piecesList);
@@ -166,25 +235,33 @@ $(document).ready(function(){
         }
     });
 
-    socket.on('joined', function(msg) {
+    socket.on("joined", function(msg) {
         console.log(msg);
     });
 
-    socket.on('askToStart', function(msg) {
-        console.log(msg);
+    socket.on("askToStart", function(msg) {
+        $(".turn").html(msg);
     });
 
-    socket.on('highlightSelectedPiece', function(position) {
-        $("[data-name=\"" + position + "\"]").addClass('active');
+    socket.on("showButton", function(element) {
+        $(".turn").html(element);
     });
 
-    socket.on('removeHighlightSelectedPiece', function(position) {
-        $("[data-name=\"" + position + "\"]").removeClass('active');
-        $('td').removeClass('possible');
-        $('img:not(.own).clickable').removeClass('clickable');
+    socket.on("showBar", function(element) {
+        $("body").append($(element));
     });
 
-    socket.on('showMovements', function(moves) {
+    socket.on("highlightSelectedPiece", function(position) {
+        $("[data-name=\"" + position + "\"]").addClass("active");
+    });
+
+    socket.on("removeHighlightSelectedPiece", function(position) {
+        $("[data-name=\"" + position + "\"]").removeClass("active");
+        $("td").removeClass("possible");
+        $("img:not(.own).clickable").removeClass("clickable");
+    });
+
+    socket.on("showMovements", function(moves) {
         possibleMoves = moves;
         for(var index in moves) {
             $("[data-name=\"" + moves[index] + "\"]").addClass("possible");
@@ -192,39 +269,60 @@ $(document).ready(function(){
         }
     });
 
-    socket.on('clearBoard', function() {
-        $('td').removeClass('possible');
-        $('img:not(.own).clickable').removeClass('clickable');
+    socket.on("clearBoard", function() {
+        $("td").removeClass("possible");
+        $("img:not(.own).clickable").removeClass("clickable");
     });
 
-    socket.on('endGame', function(msg, img) {
-        var win = "<div class='modal'><div class='modal-box'><span>You " + msg +"</span><div class='end'><img src='/images/layout/"+ img +".svg'></div><ul><li><button value='Close'>Close</button></div></div>";
-        var lose = "<div class='modal'><div class='modal-box'><span>You " + msg +"</span><ul><li><button value='Rematch'>Rematch</button></li><li><button value='Close'>Close</button></li></ul></div></div>";
-        if(msg == "won") {
-            $('body').append($(win));
-        } else {
-            $('body').append($(lose));
-        }
+    socket.on("clearAll", function() {
+        $("td").html("");
     });
 
-    socket.on('wantToUpgrade', function(piece, opponentPiece, position){
-        var upgrade = "<div class='modal'><div class='modal-box'><span>Miglioramento Possibile</span><div><img src='/images/layout/"+ piece.name +".svg'></div><div class='to'><img src='/images/layout/arrow.svg'></div><div><img src='/images/layout/" + piece.upgradedName + ".svg'></div><ul><li><button value='Migliora'>Migliora</button></li><li><button value='Annulla'>Annulla</button></li></ul></div></div>";
-        $('body').append($(upgrade));
+    socket.on("unbind", function() {
+        $("td").unbind("click");
+        $("#capturedBoard.own").unbind("click");
+
+        $(".turn").text("Waiting...");
+    });
+
+    socket.on("endGame", function(msg) {
+        $("body").append($(msg));
+
+        $(document).on("click", ".rematch", function() {
+            socket.emit("rematch");
+            $(".modal").remove();
+            $(".turn").text("Waiting...");
+        });
+    
+        $(document).on("click", ".quit", function() {
+            socket.emit("quit");
+            $(".modal").remove();
+            $(".bottom-bar").remove();
+        });
+
+        $("td").unbind("click");
+        $("#capturedBoard.own").unbind("click");
+
+    });
+
+    socket.on("wantToUpgrade", function(piece, opponentPiece, position){
+        var upgrade = "<div class='modal'><div class='modal-box'><span>Promotion Possibile</span><div><img src='/images/layout/" + piece.name + ".svg'></div><div class='to'><img src='/images/layout/arrow.svg'></div><div><img src='/images/layout/" + piece.upgradedName + ".svg'></div><ul><li><button value='Promote'>Promote</button></li><li><button value='Close'>Close</button></li></ul></div></div>";
+        $("body").append($(upgrade));
         var choice;
-        $( "button" ).on('click', function( event ) {
+        $( "button" ).on("click", function( event ) {
             var clicked = $(this).val();
-            if(clicked == "Migliora") {
+            if(clicked == "Promote") {
                 choice = true;
-                socket.emit('upgrade', piece, opponentPiece, position, choice);
-            } else if(clicked == "Annulla"){
+                socket.emit("upgrade", piece, opponentPiece, position, choice);
+            } else if(clicked == "Close"){
                 choice = false;
-                socket.emit('upgrade', piece, opponentPiece, position, choice);
+                socket.emit("upgrade", piece, opponentPiece, position, choice);
             }
-            $('.modal').remove();
+            $(".modal").remove();
         });
     });
 
-    socket.on('updatePlayerView', function(piece, oldPosition, newPosition, dropping) {
+    socket.on("updatePlayerView", function(piece, oldPosition, newPosition, dropping) {
         if(dropping == true) {
             $("#capturedBoard.own > [data-name=\"" + oldPosition + "\"]").remove();
         } else {
@@ -238,7 +336,7 @@ $(document).ready(function(){
         }
     });
 
-    socket.on('updateOpponentView', function(piece, oldPosition, newPosition, dropping) {
+    socket.on("updateOpponentView", function(piece, oldPosition, newPosition, dropping) {
         
         if(dropping == true) {
             $("#capturedBoard.opponent > [data-name=\"" + oldPosition + "\"]").remove();
@@ -253,17 +351,17 @@ $(document).ready(function(){
         }
     });
 
-    socket.on('addPieceToDrops', function(piece) {
+    socket.on("addPieceToDrops", function(piece) {
         $("#capturedBoard.own").append("<li data-name='" + piece.id + "'><img src='/images/layout/" + piece.name + ".svg'></li>");
     });
 
-    socket.on('addOpponentPieceToDrops', function(piece) {
+    socket.on("addOpponentPieceToDrops", function(piece) {
         $("#capturedBoard.opponent").append("<li data-name='" + piece.id + "'><img src='/images/layout/" + piece.name + "Opp.svg'></li>");
     });
 
     /****ERRORS HANDLER****/
 
-    socket.on('error', function(msg) {
+    socket.on("error", function(msg) {
         console.log(msg);
     });
 });

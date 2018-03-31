@@ -1,17 +1,20 @@
 // Dependencies
-const express = require('express');
-const socketIO = require('socket.io');
-const path = require('path');
+const mongojs = require("mongojs");
+const db = mongojs("mongodb://paoloforti96>:Grzk9v3wh97@ds052649.mlab.com:52649/shogi", ["users", "forgot"]);
+// db.collection.insert({});
+const express = require("express");
+const socketIO = require("socket.io");
+const path = require("path");
 const PORT = process.env.PORT || 5000;
-const http = require('http');
+const http = require("http");
 
-var app = require('express')();
+var app = require("express")();
 var server = http.createServer(app);
 var io = socketIO(server);
 
-app.use(express.static(path.join(__dirname, 'public')));
-app.get('/', function (req, res) {
-  res.sendFile(__dirname + '/views/pages/index.html');
+app.use(express.static(path.join(__dirname, "public")));
+app.get("/", function (req, res) {
+  res.sendFile(__dirname + "/views/pages/index.html");
 });
 
 server.listen(PORT, () => console.log(`Listening on ${PORT}`));
@@ -19,138 +22,177 @@ server.listen(PORT, () => console.log(`Listening on ${PORT}`));
 //GAME CONSTANTS
 const mainRoom = "MainRoom";
 
-const board = "<div class='left-area'>" +
-"<ul id='capturedBoard' class='opponent'></ul>" +
-"</div>" +
-"<table id='board'>" +
-"<tbody>" +
-    "<tr>" +
-        "<td data-name='I-1'></td>" +
-        "<td data-name='I-2'></td>" +
-        "<td data-name='I-3'></td>" +
-        "<td data-name='I-4'></td>" +
-        "<td data-name='I-5'></td>" +
-        "<td data-name='I-6'></td>" +
-        "<td data-name='I-7'></td>" +
-        "<td data-name='I-8'></td>" +
-        "<td data-name='I-9'></td>" +
-    "</tr>" +
-    "<tr>" +
-        "<td data-name='H-1'></td>" +
-        "<td data-name='H-2'></td>" +
-        "<td data-name='H-3'></td>" +
-        "<td data-name='H-4'></td>" +
-        "<td data-name='H-5'></td>" +
-        "<td data-name='H-6'></td>" +
-        "<td data-name='H-7'></td>" +
-        "<td data-name='H-8'></td>" +
-        "<td data-name='H-9'></td>" +
-    "</tr>" +
-    "<tr>" +
-        "<td data-name='G-1'></td>" +
-        "<td data-name='G-2'></td>" +
-        "<td data-name='G-3'></td>" +
-        "<td data-name='G-4'></td>" +
-        "<td data-name='G-5'></td>" +
-        "<td data-name='G-6'></td>" +
-        "<td data-name='G-7'></td>" +
-        "<td data-name='G-8'></td>" +
-        "<td data-name='G-9'></td>" +
-    "</tr>" +
-    "<tr>" +
-        "<td data-name='F-1'></td>" +
-        "<td data-name='F-2'></td>" +
-        "<td data-name='F-3'></td>" +
-        "<td data-name='F-4'></td>" +
-        "<td data-name='F-5'></td>" +
-        "<td data-name='F-6'></td>" +
-        "<td data-name='F-7'></td>" +
-        "<td data-name='F-8'></td>" +
-        "<td data-name='F-9'></td>" +
-    "</tr>" +
-    "<tr>" +
-        "<td data-name='E-1'></td>" +
-        "<td data-name='E-2'></td>" +
-        "<td data-name='E-3'></td>" +
-        "<td data-name='E-4'></td>" +
-        "<td data-name='E-5'></td>" +
-        "<td data-name='E-6'></td>" +
-        "<td data-name='E-7'></td>" +
-        "<td data-name='E-8'></td>" +
-        "<td data-name='E-9'></td>" +
-    "</tr>" +
-    "<tr>" +
-        "<td data-name='D-1'></td>" +
-        "<td data-name='D-2'></td>" +
-        "<td data-name='D-3'></td>" +
-        "<td data-name='D-4'></td>" +
-        "<td data-name='D-5'></td>" +
-        "<td data-name='D-6'></td>" +
-        "<td data-name='D-7'></td>" +
-        "<td data-name='D-8'></td>" +
-        "<td data-name='D-9'></td>" +
-    "</tr>" +
-    "<tr>" +
-        "<td data-name='C-1'></td>" +
-        "<td data-name='C-2'></td>" +
-        "<td data-name='C-3'></td>" +
-        "<td data-name='C-4'></td>" +
-        "<td data-name='C-5'></td>" +
-        "<td data-name='C-6'></td>" +
-        "<td data-name='C-7'></td>" +
-        "<td data-name='C-8'></td>" +
-        "<td data-name='C-9'></td>" +
-    "</tr>" +
-    "<tr>" +
-        "<td data-name='B-1'></td>" +
-        "<td data-name='B-2'></td>" +
-        "<td data-name='B-3'></td>" +
-        "<td data-name='B-4'></td>" +
-        "<td data-name='B-5'></td>" +
-        "<td data-name='B-6'></td>" +
-        "<td data-name='B-7'></td>" +
-        "<td data-name='B-8'></td>" +
-        "<td data-name='B-9'></td>" +
-    "</tr>" +
-    "<tr>" +
-        "<td data-name='A-1'></td>" +
-        "<td data-name='A-2'></td>" +
-        "<td data-name='A-3'></td>" +
-        "<td data-name='A-4'></td>" +
-        "<td data-name='A-5'></td>" +
-        "<td data-name='A-6'></td>" +
-        "<td data-name='A-7'></td>" +
-        "<td data-name='A-8'></td>" +
-        "<td data-name='A-9'></td>" +
-    "</tr>" +
-"</tbody>" +
-"</table>" +
-"<div class='right-area'>" +
-"<ul id='capturedBoard' class='own'></ul>" +
-"</div>" +
-"<button id='startMatchButton'>Start Match</button>";
+const board = `
+<div class='top-bar'><span class='self'></span> VS <span class='opponent'>Waiting for opponent...</span></div>
+<span class='turn'></span>
+<div class="left-area">
+<ul id="capturedBoard" class="opponent"></ul>
+</div>
+<table id="board">
+<tbody>
+    <tr>
+        <td data-name="I-1"></td>
+        <td data-name="I-2"></td>
+        <td data-name="I-3"></td>
+        <td data-name="I-4"></td>
+        <td data-name="I-5"></td>
+        <td data-name="I-6"></td>
+        <td data-name="I-7"></td>
+        <td data-name="I-8"></td>
+        <td data-name="I-9"></td>
+    </tr>
+    <tr>
+        <td data-name="H-1"></td>
+        <td data-name="H-2"></td>
+        <td data-name="H-3"></td>
+        <td data-name="H-4"></td>
+        <td data-name="H-5"></td>
+        <td data-name="H-6"></td>
+        <td data-name="H-7"></td>
+        <td data-name="H-8"></td>
+        <td data-name="H-9"></td>
+    </tr>
+    <tr>
+        <td data-name="G-1"></td>
+        <td data-name="G-2"></td>
+        <td data-name="G-3"></td>
+        <td data-name="G-4"></td>
+        <td data-name="G-5"></td>
+        <td data-name="G-6"></td>
+        <td data-name="G-7"></td>
+        <td data-name="G-8"></td>
+        <td data-name="G-9"></td>
+    </tr>
+    <tr>
+        <td data-name="F-1"></td>
+        <td data-name="F-2"></td>
+        <td data-name="F-3"></td>
+        <td data-name="F-4"></td>
+        <td data-name="F-5"></td>
+        <td data-name="F-6"></td>
+        <td data-name="F-7"></td>
+        <td data-name="F-8"></td>
+        <td data-name="F-9"></td>
+    </tr>
+    <tr>
+        <td data-name="E-1"></td>
+        <td data-name="E-2"></td>
+        <td data-name="E-3"></td>
+        <td data-name="E-4"></td>
+        <td data-name="E-5"></td>
+        <td data-name="E-6"></td>
+        <td data-name="E-7"></td>
+        <td data-name="E-8"></td>
+        <td data-name="E-9"></td>
+    </tr>
+    <tr>
+        <td data-name="D-1"></td>
+        <td data-name="D-2"></td>
+        <td data-name="D-3"></td>
+        <td data-name="D-4"></td>
+        <td data-name="D-5"></td>
+        <td data-name="D-6"></td>
+        <td data-name="D-7"></td>
+        <td data-name="D-8"></td>
+        <td data-name="D-9"></td>
+    </tr>
+    <tr>
+        <td data-name="C-1"></td>
+        <td data-name="C-2"></td>
+        <td data-name="C-3"></td>
+        <td data-name="C-4"></td>
+        <td data-name="C-5"></td>
+        <td data-name="C-6"></td>
+        <td data-name="C-7"></td>
+        <td data-name="C-8"></td>
+        <td data-name="C-9"></td>
+    </tr>
+    <tr>
+        <td data-name="B-1"></td>
+        <td data-name="B-2"></td>
+        <td data-name="B-3"></td>
+        <td data-name="B-4"></td>
+        <td data-name="B-5"></td>
+        <td data-name="B-6"></td>
+        <td data-name="B-7"></td>
+        <td data-name="B-8"></td>
+        <td data-name="B-9"></td>
+    </tr>
+    <tr>
+        <td data-name="A-1"></td>
+        <td data-name="A-2"></td>
+        <td data-name="A-3"></td>
+        <td data-name="A-4"></td>
+        <td data-name="A-5"></td>
+        <td data-name="A-6"></td>
+        <td data-name="A-7"></td>
+        <td data-name="A-8"></td>
+        <td data-name="A-9"></td>
+    </tr>
+</tbody>
+</table>
+<div class="right-area">
+<ul id="capturedBoard" class="own"></ul>
+</div>
+`;
 
-const page = "" +
-"<div class='connectedUsers'><span>Connected Users</span>" +
-"<ul>" +
-"</ul>" +
-"</div>" +
-"<div class='createRoom'>" +
-  "<ul>" +
-  "<li>Rules</li>" +
-  "<li><input type='text' class='roomName' placeholder='Room Name' minlength='4' maxlength='16'>" +
-  "<button id='createRoomButton'>Create Room</button></li>" +
-  "</ul>" +
-"</div>" +
-"<div class='rooms'>" +
-"<ul></ul>" +
-"</div>";
+const page = `
+<div class="connectedUsers"><span>Connected Users</span>
+<ul>
+</ul>
+</div>
+<div class="createRoom">
+  <ul>
+  <li class="rules">Rules</li>
+  <li><input type="text" class="roomName" placeholder="Room Name" minlength="4" maxlength="16">
+  <button id="createRoomButton">Create Room</button></li>
+  </ul>
+</div>
+<div class="rooms">
+<ul></ul>
+</div>`;
 
-const login = "" +
-"<div class='login'>" +
-  "<input type='text' placeholder='Username' minlength='4' maxlength='16'>" +
-  "<button id='loginButton'>Login</button>" +
-"</div>";
+const login = `
+<div class="login">
+  <div class="nav"><img src="images/layout/logo.svg"></div>
+  <div>
+  <div class="logo">
+  </div>
+  <div class="form">
+    <input class="username" type="text" placeholder="Username" minlength="4" maxlength="16">
+    <span></span>
+    <button id="loginButton">Connect</button>
+  </div>
+  </div>
+</div>`;
+
+const register = `
+<div class="register">
+  <div class="nav"><img src="images/layout/logo.svg"></div>
+  <div>
+    <div class="logo">
+    </div>
+    <div class="form">
+      <input class="email" type="email" placeholder="E-mail" minlength="4" maxlength="64">
+      <input class="username" type="text" placeholder="Username" minlength="4" maxlength="16">
+      <input class="password" type="text" placeholder="Password" minlength="4" maxlength="16">
+      <button id="registerButton">Confirm</button>
+      <a href="#" class="login">Login</a>
+    </div>
+  </div>
+</div>`;
+
+const forgot = `
+<div class="forgot">
+  <div class="nav"><img src="images/layout/logo.svg"></div>
+  <div>
+    <div class="form">
+      <input type="email" placeholder="E-mail" minlength="4" maxlength="16">
+      <button id="recoverButton">Recover</button>
+      <a href="#" class="login">Login</a> or <a href="#" class="register">Register</a>
+    </div>
+  </div>
+</div>`;
 
 //GAME VARIABLES
 
@@ -166,6 +208,21 @@ const movesTorrePromossa = Array("upUp", "rightRight", "downDown", "leftLeft", "
 const movesAlfierePromosso = Array("diagDiagUpRight", "diagDiagDownRight", "diagDiagDownLeft", "diagDiagUpLeft", "up", "right", "down", "left");
 
 const boardCoordinates = Array("A", "B", "C", "D", "E", "F", "G", "H", "I");
+
+const piecesList = Array( {Name: "Pawn", Description: "A pawn can move one square directly forward. It cannot retreat."},
+                          {Name: "Promoted Pawn", Description: "Loses his current moveset and gains properties of a gold general."},
+                          {Name: "Lance", Description: "A lance can move any number of free squares directly forward. It cannot move backward or to the sides."},
+                          {Name: "Promoted Lance", Description: "Loses his current moveset and gains properties of a gold general."},
+                          {Name: "Bishop", Description: "A bishop can move any number of free squares along any one of the four diagonal directions."},
+                          {Name: "Promoted Bishop", Description: "It moves like a bishop or a king, but each turn only one of two ways."},
+                          {Name: "Rook", Description: "A rook can move any number of free squares along any one of the four orthogonal directions."},
+                          {Name: "Promoted Rook", Description: "It moves like a rook or a king, but each turn only one of two ways."},
+                          {Name: "Knight", Description: "Knight moves like chess knights, in an “big L” shape, but can only move forward."},
+                          {Name: "Promoted Knight", Description: "Loses his current moveset and gains properties of a gold general."},
+                          {Name: "Silver General", Description: "A silver general can move one square diagonally or one square directly forward, giving it five possibilities."},
+                          {Name: "Promoted Silver General", Description: "Loses his current moveset and gains properties of a gold general."},
+                          {Name: "Gold General", Description: "A gold general can move one square orthogonally, or one square diagonally forward, giving it six possible destinations. It cannot move diagonally backward."},
+                          {Name: "King", Description: "A king can move one square in any direction, orthogonal or diagonal."},);
 
 var SOCKET_LIST = {};
 
@@ -225,25 +282,31 @@ var Room = function (id, name) {
     self.wantToStart++;
   }
 
-  self.destroyRoom = function (name) {
-    delete Room.list[name];
-  }
-
   self.setOpponent = function(value) {
     self.player2 = value;
     self.connectedUsers = 2;
     self.setPlayersPieces();
   }
 
+  self.destroyRoom = function(roomName) {
+    delete Room.list[roomName];
+  }
+
   self.abandonRoom = function() {
     self.player2 = "";
     self.connectedUsers = 1;
-    self.setPlayersPieces();
+    self.wantToStart = 0;
+    self.player1Pieces = createPieces();
   }
 
   self.setPlayersPieces = function() {
     self.player1Pieces = createPieces();
     self.player2Pieces = createPieces();
+  }
+
+  self.rematch = function() {
+    self.wantToStart = 0;
+    self.setPlayersPieces();
   }
 
   self.updateTurn = function(value) {
@@ -299,9 +362,10 @@ var Piece = function (id, name, upgradable, property, startPosition, upgradedNam
 /**** ROOM METHODS ******/
 Room.playerTurn = function (socket) {
   if(Room.list[socket.room].wantToStart == 0) {
-    socket.broadcast.to(socket.room).emit('askToStart', "Your opponent wants to start the match");
+    socket.broadcast.to(socket.room).emit('askToStart', "<span>Your opponent wants to start the match</span><button id=\"startMatchButton\" class=\"accept\">Accept</button>");
+    socket.emit('askToStart', "<span>Waiting for the reply...</span>");
   } else if(Room.list[socket.room].wantToStart == 1) {
-    socket.broadcast.to(socket.room).emit('askToStart', "Your opponent accepted your match request");
+    socket.broadcast.to(socket.room).emit('askToStart', "<span>Your opponent accepted your match request</span>");
     if(Room.list[socket.room].player2.id == socket.id) {
       socket.emit('turn', "");
       socket.broadcast.to(socket.room).emit('turn', "your turn");
@@ -323,64 +387,286 @@ Player.onConnect = function (socket, playerName) {
   
   socket.on('createRoom', function(roomName){ // create room
 
-    player.createRoom();
+    if(Room.list[roomName] == undefined || Room.list[roomName] == null){
+      player.createRoom();
 
-    io.in(mainRoom).emit('connectedUsers', Player.list);
-    socket.leave(mainRoom);
+      io.in(mainRoom).emit('connectedUsers', Player.list);
+      socket.leave(mainRoom);
 
-    player.setFaction("black");
-    var room = Room(socket.uniqueId, roomName);
+      player.setFaction("black");
+      var room = Room(socket.uniqueId, roomName);
 
-    socket.room = roomName;
-    socket.join(socket.room);
-    socket.broadcast.emit('rooms', Room.list, socket.room);
-    socket.emit('displayPage', board); // send to user the main page
-
-    socket.emit('displayPieces', room.player1Pieces);
+      socket.room = roomName;
+      socket.join(socket.room);
+      socket.broadcast.emit("rooms", Room.list, socket.room);
+      socket.emit("displayPage", board); // send to user the main page
+      io.in(socket.room).emit("updateTopBar", "self", "You");
+      socket.emit("displayPieces", room.player1Pieces);
+      socket.emit('showButton', "<button id=\"destroyRoomButton\" class=\"destroy\">Quit</button>");
+      socket.emit('showBar', "<div class='bottom-bar'><button id=\"surrenderButton\">Surrender</button><button id=\"quitMatchButton\">Quit</button></div>");
+    } else {
+      socket.emit("roomAlreadyExists", roomName);
+    }
   });
 
-  socket.on('joinRoom', function(roomName){ // join room
+  socket.on("joinRoom", function(roomName){ // join room
     //console.log(io.sockets.adapter.rooms[roomName].length);
     socket.room = roomName;
     socket.join(socket.room);
     player.joinRoom();
-    player.setFaction("red");
+    player.setFaction("white");
 
-    io.in(mainRoom).emit('connectedUsers', Player.list);
+    io.in(mainRoom).emit("connectedUsers", Player.list);
     socket.leave(mainRoom);
 
     Room.list[socket.room].setOpponent(player);
-    //console.log(socket.room);
-    socket.broadcast.emit('rooms', Room.list, socket.room);
-    socket.broadcast.to(socket.room).emit('joined', player.name + " has joined the room");
+    socket.broadcast.emit("rooms", Room.list, socket.room);
 
     socket.emit('displayPage', board); // send to user the main page
+    socket.emit('updateTopBar', 'self', "You");
+    socket.emit('updateTopBar', 'opponent', Room.list[roomName].player1.name);
+    socket.broadcast.to(socket.room).emit('updateTopBar', 'opponent', player.name);
     socket.emit('displayPieces', Room.list[roomName].player2Pieces);
+    socket.emit('showBar', "<div class='bottom-bar'><button id=\"surrenderButton\">Surrender</button><button id=\"quitMatchButton\">Quit</button></div>");
+    socket.emit('showButton', "<button id=\"startMatchButton\">Start Match</button><button id=\"quitMatchButton\">Quit</button>");
+  });
+
+  socket.on("rules", function() {
+    var rules = `
+    <div class="modal">
+      <div class="modal-rules-box">
+      <div class='close'>X</div>
+        <h1>Rules of the game</h1>
+        <div class="section">
+          <h2>General</h2>
+          <span>
+            Each player has twenty pieces: one King, two Gold Generals, two Silver Generals, two Knights, two Lances, one Rook, one Bishop and nine Pawns. 
+            Both players alternately make a move during each turn. 
+            For each turn, a player may either move or drop just one piece. 
+            A player may not give up his turn, also known as passing. 
+            Players are not obligated to move a piece already touched. 
+            One may even pick up a piece from the game board and see what is on the other side of the piece. 
+            However, when the move is completed and a hand leaves the piece, the move can no longer be retracted.
+          </span>
+        </div>
+
+        <div class="section">
+          <h2>Object of the Game</h2>
+          <span>
+            The goal of the game is to checkmate to your opponent (capture the opponent King).
+          </span>
+        </div>
+
+        <div class="section">
+          <h2>Terminology</h2>
+          <span>
+            Check: If a king is endangered and is threatened to be captured in the next move, this danger must be averted, if possible. The player giving check does not have to announce the check.
+            <br>
+            Checkmate: If a player cannot avert a danger and his King will be taken anyway on the next turn, this is checkmate and that player loses the game.
+            <br>
+            Repetition: the game ends if the same game position occurs four times consecutively – the game is considered a draw. 
+            However, if an eternal check originated from this situation, the player giving check and causing such a situation loses the game. 
+            The game reaches a jishogi if both kings have advanced into their respective promotion zones and neither player can hope to mate the other or to gain any further material. 
+            If this happens, the winner is decided as follows: 
+            all promoted pieces are canceled and points for individual pieces (including those captured) are summed up. 
+            Each rook and bishop scores 5 points and all other pieces except kings score 1 point each. A player scoring less than 24 points loses, otherwise the game is considered a draw.
+
+            Note: In professional and serious amateur games, a player who makes an illegal move immediately loses the game.
+          </span>
+        </div>
+
+        <div class="section">
+          <h2>Pieces</h2>
+          <ul>`;
+            for(var i in piecesList) {
+              rules += "<li><h3>" + piecesList[i].Name + "</h3><img src='/images/layout/" + piecesList[i].Name.replace(/\s+/g, '') + ".svg'><span>" + piecesList[i].Description + "</span></li>";
+            }
+    rules += `</ul>
+        </div>
+
+        <div class="section">
+          <h2>Promotion</h2>
+          <span>
+            The three rows furthest away from a player are called the promotion zone.
+            Apart from the King and the Gold, any piece can be promoted to a more powerful piece when it makes a move completely or partly in the promotion zone. 
+            So, when a piece moves into, out of or fully inside the promotion zone it may be promoted upon completion of its move. 
+            Promotion is optional, provided that the piece still can make a legal move in case it is not promoted: if a Pawn or a Lance move to the last row, or a Knight moves to either of the last two rows, it must be promoted. 
+            In Shogi sets promoting a piece is done by turning this piece upside down. 
+            Its promoted name is written on its other side.
+          </span>
+        </div>
+
+        <div class="section">
+          <h2>Capturing Pieces</h2>
+          <span>
+            Pieces are captured as follows: the attacking piece takes the place of the captured enemy piece (capturing by placement). 
+            Captured pieces are removed from the game board. 
+            <br>
+            A player who captured the piece acquires the piece and places it aside to be seen, next to the game board on his side, and always shown as an unpromoted piece. 
+            Capturing pieces is optional. 
+            <br>
+            It is not mandatory to capture an enemy piece, it is always up to the player to decide if and when to capture an opponent's piece.
+          </span>
+        </div>
+
+        <div class="section">
+          <h2>Drops</h2>
+          <span>
+            On any turn, a player may either move a piece on the board or drop a captured piece onto the board. 
+            <br>
+            A player may drop a captured piece on any empty square on the board as his own (that's why the pieces are differentiated only by their oriented tips, not by colors). 
+            <br>
+            By dropping a piece, a check can be given (endangering of the king does not have to be announced), or even a checkmate can be given (except by a pawn). 
+            <br>
+            A piece can be dropped in the path of danger and to cancel a check. 
+            <br>
+            A piece is always dropped unpromoted side up, even if dropped into the promotion zone. 
+            <br>
+            A piece should be dropped on a field where it is still possible to move such a piece for at least one more move. Pawns and lances cannot be dropped onto the last row while knights cannot be dropped on the last two rows. 
+            <br>
+            A pawn cannot be dropped in a column containing another unpromoted pawn of the same player (promoted pawns do not count). 
+            <br>
+            A pawn cannot be dropped to give an immediate checkmate (although other pieces can); however, pawns may give checkmate on any subsequent move after the pawn was dropped.
+          </span>
+        </div>
+
+        <button value='Close' class='close'>Close</button>
+      </div>
+    </div>`;
+
+    socket.emit("displayRules", rules);
   });
 
   socket.on('matchStart', function() {
-    //console.log(Room.list[socket.room]);
     if (Room.list[socket.room].player1 != undefined && Room.list[socket.room].player2 != undefined) {
       Room.playerTurn(socket);
     }
   });
 
+  socket.on("rematch", function() {
+    if(Room.list[socket.room].turn == "black") {
+      Room.list[socket.room].turn == "white";
+    } else {
+      Room.list[socket.room].turn == "black";
+    }
+    Room.list[socket.room].rematch();
+    io.in(socket.room).emit("clearAll");
+    socket.broadcast.to(Room.list[socket.room].player1.id).emit('displayPieces', Room.list[socket.room].player1Pieces);
+    socket.broadcast.to(Room.list[socket.room].player2.id).emit('displayPieces', Room.list[socket.room].player2Pieces);
+    Room.playerTurn(socket);
+  });
+
+  socket.on("surrender", function() {
+    if(Room.list[socket.room].wantToStart == 2) {
+      surrender(socket);
+    }
+  });
+
+  socket.on("quit", function() {
+    if(Player.list[socket.uniqueId].insideRoom == true && Player.list[socket.uniqueId].roomCreated == true) {
+      destroy(socket);
+    } else {
+      quit(socket);
+    }
+  });
+
+  socket.on("destroy", function() {
+    
+    destroy(socket);
+
+  });
+
+  socket.on("abandon", function() {
+    
+    socket.join(mainRoom);
+
+  });
+
+}
+
+function destroy(socket) {
+  io.in(socket.room).emit("clearAll");
+  socket.broadcast.to(socket.room).emit("roomDestroyed");
+  socket.broadcast.to(socket.room).emit("displayPage", page);
+  socket.broadcast.to(socket.room).emit("abandon", page);
+
+  Player.list[Room.list[socket.room].player1.uniqueId].destroyRoom();
+  if(Room.list[socket.room].player2 != "") {
+    Player.list[Room.list[socket.room].player2.uniqueId].abandonRoom();
+  }
+
+  Room.list[socket.room].destroyRoom(socket.room);
+
+  resendPage(socket); // send to user the main page
+}
+
+function quit(socket) {
+  var room = Room.list[socket.room];
+  io.in(socket.room).emit("clearAll");
+  socket.broadcast.to(socket.room).emit('showButton', "<button id=\"destroyRoomButton\" class=\"destroy\">Quit</button>");
+  socket.broadcast.to(socket.room).emit("updateTopBar", "opponent", "Waiting for opponent...");
+  socket.broadcast.to(socket.room).emit("roomAbandoned");
+  
+  Player.list[room.player2.uniqueId].abandonRoom();
+
+  room.abandonRoom();
+  
+  if (room.turn == "white") {
+    room.updateTurn("black");
+  } else {
+    room.updateTurn("white");
+  }
+  //Room.list[socket.room].player1.setFaction("black");
+
+  socket.broadcast.to(socket.room).emit("displayPieces", Room.list[socket.room].player1Pieces);
+  resendPage(socket); // send to user the main page
+}
+
+function surrender(socket) {
+  socket.broadcast.to(socket.room).emit('turn', "Your opponent did surrender");
+  socket.emit('endGame', "<div class='modal'><div class='modal-box'><span>You lost</span><ul><li><button class='rematch' value='Rematch'>Rematch</button></li><li><button value='Quit' class='quit'>Quit</button></li></ul></div></div>");
+  socket.broadcast.to(socket.room).emit('endGame', "<div class='modal'><div class='modal-box'><span>You won</span><div class='end'><img src='/images/layout/crown.svg'></div><button value='Close' class='close'>Close</button></div></div>");
+}
+
+function resendPage(socket) {
+  socket.leave(socket.room);
+  socket.join(mainRoom);
+  socket.emit('displayPage', page); // send to user the main page
+  io.in(mainRoom).emit('connectedUsers', Player.list);
+  io.in(mainRoom).emit('rooms', Room.list);
 }
 
 Player.onDisconnect = function (socket) {
+  
+  if(Player.list[socket.uniqueId].insideRoom == true && Player.list[socket.uniqueId].roomCreated == true) {
+    destroy(socket);
+  } else if(Player.list[socket.uniqueId].insideRoom == true){
+    quit(socket);
+  }
   delete Player.list[socket.uniqueId];
-  delete Room.list[socket.room];
   io.in(mainRoom).emit('connectedUsers', Player.list);
   io.in(mainRoom).emit('rooms', Room.list);
-  socket.leave(socket.room);
-  socket.leave(mainRoom);
   console.log(socket.id + " has disconnected");
 }
 
 io.sockets.on('connection', function (socket) {
   socket.emit('displayPage', login); // send to user the login page
 
+  socket.on('changePage', function(pageLink) {
+    if(pageLink == "register") {
+      socket.emit('displayPage', register); // send to user the main page
+    }
+    if(pageLink == "login") {
+      socket.emit('displayPage', login); // send to user the main page
+    }
+    if(pageLink == "forgot") {
+      socket.emit('displayPage', forgot); // send to user the main page
+    }
+  });
+
   socket.on('login', function(playerName){
+    socket.leave(socket.room);
+    //db.users.find({username: playerName, password: typedPassword}, function(err, res){
     socket.emit('displayPage', page); // send to user the main page
     socket.join(mainRoom);
     socket.uniqueId = Math.random(); // generate a random socket id
@@ -391,6 +677,7 @@ io.sockets.on('connection', function (socket) {
     io.in(mainRoom).emit('connectedUsers', Player.list);
 
     socket.emit('rooms', Room.list);
+    //});
     
     // on user disconnect, remove player from socket list,
     // remove it from player list and leave the main room
@@ -406,11 +693,12 @@ io.on('connect', function (socket) {
   socket.on('movements', function (selected) {
     var room = Room.list[socket.room]; // get room from room list
     var moves;
+    console.log(room.turn);
     if (room.turn == "black" && findObjectByTripleKey(room.player1Pieces, 'property', 'currentPosition', 'captured', 'player1', selected, false)) {
 
       moves = possibleMoves(room.player1Pieces, selected); // assign to possible moves
 
-    } else if (room.turn == "red" && findObjectByTripleKey(room.player2Pieces, 'property', 'currentPosition', 'captured', 'player1', selected, false)) {
+    } else if (room.turn == "white" && findObjectByTripleKey(room.player2Pieces, 'property', 'currentPosition', 'captured', 'player1', selected, false)) {
 
       moves = possibleMoves(room.player2Pieces, selected); // assign to possible moves
 
@@ -449,7 +737,7 @@ io.on('connect', function (socket) {
       eatedPiece = findObjectByTripleKey(room.player1Pieces, 'property', 'currentPosition', 'captured', 'player2', position, false);
       if(eatedPiece) {
 
-        if(eatedPiece.name == "Re"){
+        if(eatedPiece.name == "King"){
           endGame = true;
         }
 
@@ -463,7 +751,7 @@ io.on('connect', function (socket) {
         socket.broadcast.to(socket.room).emit('addOpponentPieceToDrops', eatedPiece); // show captured piece to opponent drops
       }
       
-    } else if (room.turn == "red") {
+    } else if (room.turn == "white") {
 
       piece = findObjectByTripleKey(room.player2Pieces, 'property', 'currentPosition', 'captured', 'player1', selectedPiece, false);
       opponentPiece = findObjectByTripleKey(room.player1Pieces, 'property', 'currentPosition', 'captured', 'player2', convertPosition(selectedPiece), false);
@@ -472,7 +760,7 @@ io.on('connect', function (socket) {
       eatedPiece = findObjectByTripleKey(room.player2Pieces, 'property', 'currentPosition', 'captured', 'player2', position, false);
       if(eatedPiece) {
 
-        if(eatedPiece.name == "Re"){
+        if(eatedPiece.name == "King"){
           endGame = true;
         }
 
@@ -489,8 +777,8 @@ io.on('connect', function (socket) {
     }
 
     if (endGame == false && (extractCoordinates(position) >= 6 || extractCoordinates(piece.currentPosition) >= 6) && piece.promoted == false && piece.upgradable == true) {
-      if (((piece.pieceName == "Pedina" || piece.pieceName == "Lanciere") && extractCoordinates(position) == 8) ||
-       (piece.pieceName == "Cavallo" && extractCoordinates(position) >= 7)) {
+      if (((piece.pieceName == "Pawn" || piece.pieceName == "Lance") && extractCoordinates(position) == 8) ||
+       (piece.pieceName == "Knight" && extractCoordinates(position) >= 7)) {
         upgradePiece(piece, opponentPiece, position, socket, true);
       } else {
         socket.emit('wantToUpgrade', piece, opponentPiece, position);
@@ -530,7 +818,7 @@ io.on('connect', function (socket) {
 
       moves = possibleDropPositions(piece, room.player1Pieces); // assign to possible moves
 
-    } else if (room.turn == "red") {
+    } else if (room.turn == "white") {
       
       var piece = findObjectByTripleKey(room.player2Pieces, 'property', 'id', 'captured', '', id, true);
 
@@ -580,18 +868,19 @@ io.on('connect', function (socket) {
 
 function updateTurns(socket) {
   var room = Room.list[socket.room];
-  if (room.turn == "red") {
+  if (room.turn == "white") {
     room.updateTurn("black");
   } else {
-    room.updateTurn("red");
+    room.updateTurn("white");
   }
+  console.log("turn: " + room.turn);
   socket.emit('turn', "");
   socket.broadcast.to(socket.room).emit('turn', "your turn");
 }
 
 function gameEnd(socket) {
-  socket.emit('endGame', 'won', 'crown');
-  socket.broadcast.to(socket.room).emit('endGame', 'lost', '');
+  socket.broadcast.to(socket.room).emit('endGame', "<div class='modal'><div class='modal-box'><span>You lost</span><ul><li><button class='rematch' value='Rematch'>Rematch</button></li><li><button value='Quit' class='quit'>Quit</button></li></ul></div></div>");
+  socket.emit('endGame', "<div class='modal'><div class='modal-box'><span>You won</span><div class='end'><img src='/images/layout/crown.svg'></div><button value='Close' class='close'>Close</button></div></div>");
 }
 
 /** MOVEMENTS FUNCTIONS */
@@ -871,26 +1160,41 @@ function possibleDropPositions(piece, pieces) {
   var position;
   var possibleDropsPositions = Array();
   var maxRow = 9;
-  if(piece.name == "Pedina" || piece.name == "Lanciere") {
+  var upgraded = false;
+  if(piece.name == "Pawn" || piece.name == "Lance") {
     maxRow = 8;
-  } else if (piece.name == "Cavallo") {
+  } else if (piece.name == "Knight") {
     maxRow = 7;
   }
 
   var myPiece;
   
   for(var c = 1; c < 10; c++) {
+    upgraded = true;
+    if(piece.name == "Pawn") {
+      var found = findElementByMultipleKey(pieces, 'currentPosition', 'name', 'captured', 'property', c, 'Pawn', false, 'player1');
+      if(found != null) {
+        
+        for(var i in found){
+          if(found[i].promoted == true) {
+            upgraded = true;
+          } else {
+            upgraded = false;
+          }
+        }
+      }
+    }
     for(var r = 0; r < maxRow; r++) {
       position = convertToNewPos(r, c);
       var coordinate = position.split("-");
       var col = coordinate[0];
-      if(piece.name == "Pedina") {
-        if(findElementByTripleKey(pieces, 'currentPosition', 'name', 'captured', c, 'Pedina', false) != null) {
-          break;
-        }
+
+      if(upgraded == false) {
+        break;
       }
+
       myPiece = findObjectByDoubleKey(pieces, 'currentPosition', 'captured', position, false);
-      if(myPiece == null && findObjectByDoubleKey(pieces, 'currentPosition', 'captured', position, false) == null) {
+      if(myPiece == null) {
         possibleDropsPositions.push(position);
       }
     }
@@ -902,6 +1206,7 @@ function possibleDropPositions(piece, pieces) {
 
 /** GENERAL PURPOSE FUNCTIONS */
 function findElementByTripleKey(array, key, key2, key3, value, value2, value3) {
+  
   for (var i = 0; i < array.length; i++) {
     //console.log("Position: " + array[i][key] + " - Name: " + array[i][key2] + " - Captured: " + array[i][key3]);
     if (array[i][key].indexOf(value) > -1 && array[i][key2] === value2 && array[i][key3] === value3) {
@@ -909,6 +1214,7 @@ function findElementByTripleKey(array, key, key2, key3, value, value2, value3) {
     }
     
   }
+  
   return null;
 }
 
@@ -926,6 +1232,20 @@ function findObjectByTripleKey(array, key, key2, key3, value, value2, value3) {
     if (array[i][key] === value && array[i][key2] === value2 && array[i][key3] === value3) {
       return array[i];
     }
+  }
+  return null;
+}
+
+function findElementByMultipleKey(array, key, key2, key3, key4, value, value2, value3, value4) {
+  var match = [];
+  for (var i = 0; i < array.length; i++) {
+    if (array[i][key].indexOf(value) > -1 && array[i][key2] === value2 && array[i][key3] === value3 && array[i][key4] === value4) {
+      match.push(array[i]);
+    }
+  }
+
+  if(match.length > 0){
+    return match;
   }
   return null;
 }
@@ -953,137 +1273,49 @@ function extractCoordinates(position) {
 function createPieces() {
   var pieces = [];
 
-  pieces.push(new Piece("1", "Pedina", true, "player1", "C-1", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces.push(new Piece("2", "Pedina", true, "player1", "C-2", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces.push(new Piece("3", "Pedina", true, "player1", "C-3", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces.push(new Piece("4", "Pedina", true, "player1", "C-4", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces.push(new Piece("5", "Pedina", true, "player1", "C-5", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces.push(new Piece("6", "Pedina", true, "player1", "C-6", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces.push(new Piece("7", "Pedina", true, "player1", "C-7", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces.push(new Piece("8", "Pedina", true, "player1", "C-8", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces.push(new Piece("9", "Pedina", true, "player1", "C-9", "PedinaPromossa", movesPedina, movesGenOro));
+  pieces.push(new Piece("1", "Pawn", true, "player1", "C-1", "PromotedPawn", movesPedina, movesGenOro));
+  pieces.push(new Piece("2", "Pawn", true, "player1", "C-2", "PromotedPawn", movesPedina, movesGenOro));
+  pieces.push(new Piece("3", "Pawn", true, "player1", "C-3", "PromotedPawn", movesPedina, movesGenOro));
+  pieces.push(new Piece("4", "Pawn", true, "player1", "C-4", "PromotedPawn", movesPedina, movesGenOro));
+  pieces.push(new Piece("5", "Pawn", true, "player1", "C-5", "PromotedPawn", movesPedina, movesGenOro));
+  pieces.push(new Piece("6", "Pawn", true, "player1", "C-6", "PromotedPawn", movesPedina, movesGenOro));
+  pieces.push(new Piece("7", "Pawn", true, "player1", "C-7", "PromotedPawn", movesPedina, movesGenOro));
+  pieces.push(new Piece("8", "Pawn", true, "player1", "C-8", "PromotedPawn", movesPedina, movesGenOro));
+  pieces.push(new Piece("9", "Pawn", true, "player1", "C-9", "PromotedPawn", movesPedina, movesGenOro));
 
-  pieces.push(new Piece("10", "Alfiere", true, "player1", "B-2", "AlfierePromosso", movesAlfiere, movesAlfierePromosso));
-  pieces.push(new Piece("11", "Torre", true, "player1", "B-8", "TorrePromossa", movesTorre, movesTorrePromossa));
-  pieces.push(new Piece("12", "Lanciere", true, "player1", "A-1", "LancierePromosso", movesLanciere, movesGenOro));
-  pieces.push(new Piece("13", "Cavallo", true, "player1", "A-2", "CavalloPromosso", movesCavallo, movesGenOro));
-  pieces.push(new Piece("14", "GenArg", true, "player1", "A-3", "GenArgPromosso", movesGenArg, movesGenOro));
-  pieces.push(new Piece("15", "GenOro", false, "player1", "A-4", "", movesGenOro, ""));
-  pieces.push(new Piece("16", "Re", false, "player1", "A-5", "", movesRe, ""));
-  pieces.push(new Piece("17", "GenOro", false, "player1", "A-6", "", movesGenOro, ""));
-  pieces.push(new Piece("18", "GenArg", true, "player1", "A-7", "GenArgPromosso", movesGenArg, movesGenOro));
-  pieces.push(new Piece("19", "Cavallo", true, "player1", "A-8", "CavalloPromosso", movesCavallo, movesGenOro));
-  pieces.push(new Piece("20", "Lanciere", true, "player1", "A-9", "LancierePromosso", movesLanciere, movesGenOro));
+  pieces.push(new Piece("10", "Bishop", true, "player1", "B-2", "PromotedBishop", movesAlfiere, movesAlfierePromosso));
+  pieces.push(new Piece("11", "Rook", true, "player1", "B-8", "PromotedRook", movesTorre, movesTorrePromossa));
+  pieces.push(new Piece("12", "Lance", true, "player1", "A-1", "PromotedLance", movesLanciere, movesGenOro));
+  pieces.push(new Piece("13", "Knight", true, "player1", "A-2", "PromotedKnight", movesCavallo, movesGenOro));
+  pieces.push(new Piece("14", "SilverGeneral", true, "player1", "A-3", "PromotedSilverGeneral", movesGenArg, movesGenOro));
+  pieces.push(new Piece("15", "GoldGeneral", false, "player1", "A-4", "", movesGenOro, ""));
+  pieces.push(new Piece("16", "King", false, "player1", "A-5", "", movesRe, ""));
+  pieces.push(new Piece("17", "GoldGeneral", false, "player1", "A-6", "", movesGenOro, ""));
+  pieces.push(new Piece("18", "SilverGeneral", true, "player1", "A-7", "PromotedSilverGeneral", movesGenArg, movesGenOro));
+  pieces.push(new Piece("19", "Knight", true, "player1", "A-8", "PromotedKnight", movesCavallo, movesGenOro));
+  pieces.push(new Piece("20", "Lance", true, "player1", "A-9", "PromotedLance", movesLanciere, movesGenOro));
 
-  pieces.push(new Piece("1", "Pedina", true, "player2", "G-9", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces.push(new Piece("2", "Pedina", true, "player2", "G-8", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces.push(new Piece("3", "Pedina", true, "player2", "G-7", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces.push(new Piece("4", "Pedina", true, "player2", "G-6", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces.push(new Piece("5", "Pedina", true, "player2", "G-5", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces.push(new Piece("6", "Pedina", true, "player2", "G-4", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces.push(new Piece("7", "Pedina", true, "player2", "G-3", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces.push(new Piece("8", "Pedina", true, "player2", "G-2", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces.push(new Piece("9", "Pedina", true, "player2", "G-1", "PedinaPromossa", movesPedina, movesGenOro));
+  pieces.push(new Piece("1", "Pawn", true, "player2", "G-9", "PromotedPawn", movesPedina, movesGenOro));
+  pieces.push(new Piece("2", "Pawn", true, "player2", "G-8", "PromotedPawn", movesPedina, movesGenOro));
+  pieces.push(new Piece("3", "Pawn", true, "player2", "G-7", "PromotedPawn", movesPedina, movesGenOro));
+  pieces.push(new Piece("4", "Pawn", true, "player2", "G-6", "PromotedPawn", movesPedina, movesGenOro));
+  pieces.push(new Piece("5", "Pawn", true, "player2", "G-5", "PromotedPawn", movesPedina, movesGenOro));
+  pieces.push(new Piece("6", "Pawn", true, "player2", "G-4", "PromotedPawn", movesPedina, movesGenOro));
+  pieces.push(new Piece("7", "Pawn", true, "player2", "G-3", "PromotedPawn", movesPedina, movesGenOro));
+  pieces.push(new Piece("8", "Pawn", true, "player2", "G-2", "PromotedPawn", movesPedina, movesGenOro));
+  pieces.push(new Piece("9", "Pawn", true, "player2", "G-1", "PromotedPawn", movesPedina, movesGenOro));
 
-  pieces.push(new Piece("10", "Alfiere", true, "player2", "H-8", "AlfierePromosso", movesAlfiere, movesAlfierePromosso));
-  pieces.push(new Piece("11", "Torre", true, "player2", "H-2", "TorrePromossa", movesTorre, movesTorrePromossa));
-  pieces.push(new Piece("12", "Lanciere", true, "player2", "I-9", "LancierePromosso", movesLanciere, movesGenOro));
-  pieces.push(new Piece("13", "Cavallo", true, "player2", "I-8", "CavalloPromosso", movesCavallo, movesGenOro));
-  pieces.push(new Piece("14", "GenArg", true, "player2", "I-7", "GenArgPromosso", movesGenArg, movesGenOro));
-  pieces.push(new Piece("15", "GenOro", false, "player2", "I-6", "", movesGenOro, ""));
-  pieces.push(new Piece("16", "Re", false, "player2", "I-5", "", movesRe, ""));
-  pieces.push(new Piece("17", "GenOro", false, "player2", "I-4", "", movesGenOro, ""));
-  pieces.push(new Piece("18", "GenArg", true, "player2", "I-3", "GenArgPromosso", movesGenArg, movesGenOro));
-  pieces.push(new Piece("19", "Cavallo", true, "player2", "I-2", "CavalloPromosso", movesCavallo, movesGenOro));
-  pieces.push(new Piece("20", "Lanciere", true, "player2", "I-1", "LancierePromosso", movesLanciere, movesGenOro));
-
-  /*pieces[0].push(new Piece("1", "Pedina", true, "player1", "C-1", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces[0].push(new Piece("2", "Pedina", true, "player1", "C-2", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces[0].push(new Piece("3", "Pedina", true, "player1", "C-3", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces[0].push(new Piece("4", "Pedina", true, "player1", "C-4", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces[0].push(new Piece("5", "Pedina", true, "player1", "C-5", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces[0].push(new Piece("6", "Pedina", true, "player1", "C-6", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces[0].push(new Piece("7", "Pedina", true, "player1", "C-7", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces[0].push(new Piece("8", "Pedina", true, "player1", "C-8", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces[0].push(new Piece("9", "Pedina", true, "player1", "C-9", "PedinaPromossa", movesPedina, movesGenOro));
-
-  pieces[0].push(new Piece("10", "Alfiere", true, "player1", "B-2", "AlfierePromosso", movesAlfiere, movesAlfierePromosso));
-  pieces[0].push(new Piece("11", "Torre", true, "player1", "B-8", "TorrePromossa", movesTorre, movesTorrePromossa));
-  pieces[0].push(new Piece("12", "Lanciere", true, "player1", "A-1", "LancierePromosso", movesLanciere, movesGenOro));
-  pieces[0].push(new Piece("13", "Cavallo", true, "player1", "A-2", "CavalloPromosso", movesCavallo, movesGenOro));
-  pieces[0].push(new Piece("14", "GenArg", true, "player1", "A-3", "GenArgPromosso", movesGenArg, movesGenOro));
-  pieces[0].push(new Piece("15", "GenOro", false, "player1", "A-4", "", movesGenOro, ""));
-  pieces[0].push(new Piece("16", "Re", false, "player1", "A-5", "", movesRe, ""));
-  pieces[0].push(new Piece("17", "GenOro", false, "player1", "A-6", "", movesGenOro, ""));
-  pieces[0].push(new Piece("18", "GenArg", true, "player1", "A-7", "GenArgPromosso", movesGenArg, movesGenOro));
-  pieces[0].push(new Piece("19", "Cavallo", true, "player1", "A-8", "CavalloPromosso", movesCavallo, movesGenOro));
-  pieces[0].push(new Piece("20", "Lanciere", true, "player1", "A-9", "LancierePromosso", movesLanciere, movesGenOro));
-
-  pieces[1].push(new Piece("1", "Pedina", true, "player2", "G-9", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces[1].push(new Piece("2", "Pedina", true, "player2", "G-8", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces[1].push(new Piece("3", "Pedina", true, "player2", "G-7", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces[1].push(new Piece("4", "Pedina", true, "player2", "G-6", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces[1].push(new Piece("5", "Pedina", true, "player2", "G-5", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces[1].push(new Piece("6", "Pedina", true, "player2", "G-4", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces[1].push(new Piece("7", "Pedina", true, "player2", "G-3", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces[1].push(new Piece("8", "Pedina", true, "player2", "G-2", "PedinaPromossa", movesPedina, movesGenOro));
-  pieces[1].push(new Piece("9", "Pedina", true, "player2", "G-1", "PedinaPromossa", movesPedina, movesGenOro));
-
-  pieces[1].push(new Piece("10", "Alfiere", true, "player2", "H-8", "AlfierePromosso", movesAlfiere, movesAlfierePromosso));
-  pieces[1].push(new Piece("11", "Torre", true, "player2", "H-2", "TorrePromossa", movesTorre, movesTorrePromossa));
-  pieces[1].push(new Piece("12", "Lanciere", true, "player2", "I-9", "LancierePromosso", movesLanciere, movesGenOro));
-  pieces[1].push(new Piece("13", "Cavallo", true, "player2", "I-8", "CavalloPromosso", movesCavallo, movesGenOro));
-  pieces[1].push(new Piece("14", "GenArg", true, "player2", "I-7", "GenArgPromosso", movesGenArg, movesGenOro));
-  pieces[1].push(new Piece("15", "GenOro", false, "player2", "I-6", "", movesGenOro, ""));
-  pieces[1].push(new Piece("16", "Re", false, "player2", "I-5", "", movesRe, ""));
-  pieces[1].push(new Piece("17", "GenOro", false, "player2", "I-4", "", movesGenOro, ""));
-  pieces[1].push(new Piece("18", "GenArg", true, "player2", "I-3", "GenArgPromosso", movesGenArg, movesGenOro));
-  pieces[1].push(new Piece("19", "Cavallo", true, "player2", "I-2", "CavalloPromosso", movesCavallo, movesGenOro));
-  pieces[1].push(new Piece("20", "Lanciere", true, "player2", "I-1", "LancierePromosso", movesLanciere, movesGenOro));
-
-  /*player2Pieces[0].push(new Piece("1", "Pedina", true, "player2", "C-1", "PedinaPromossa", movesPedina, movesGenOro));
-  player1Pieces[0].push(new Piece("2", "Pedina", true, "player2", "C-2", "PedinaPromossa", movesPedina, movesGenOro));
-  player1Pieces[0].push(new Piece("3", "Pedina", true, "player2", "C-3", "PedinaPromossa", movesPedina, movesGenOro));
-  player1Pieces[0].push(new Piece("4", "Pedina", true, "player2", "C-4", "PedinaPromossa", movesPedina, movesGenOro));
-  player1Pieces[0].push(new Piece("5", "Pedina", true, "player2", "C-5", "PedinaPromossa", movesPedina, movesGenOro));
-  player1Pieces[0].push(new Piece("6", "Pedina", true, "player2", "C-6", "PedinaPromossa", movesPedina, movesGenOro));
-  player1Pieces[0].push(new Piece("7", "Pedina", true, "player2", "C-7", "PedinaPromossa", movesPedina, movesGenOro));
-  player1Pieces[0].push(new Piece("8", "Pedina", true, "player2", "C-8", "PedinaPromossa", movesPedina, movesGenOro));
-  player1Pieces[0].push(new Piece("9", "Pedina", true, "player2", "C-9", "PedinaPromossa", movesPedina, movesGenOro));
-
-  player1Pieces[0].push(new Piece("10", "Alfiere", true, "player2", "B-2", "AlfierePromosso", movesAlfiere, movesAlfierePromosso));
-  player1Pieces[0].push(new Piece("11", "Torre", true, "player2", "B-8", "TorrePromossa", movesTorre, movesTorrePromossa));
-  player1Pieces[0].push(new Piece("12", "Lanciere", true, "player2", "A-1", "LancierePromosso", movesLanciere, movesGenOro));
-  player1Pieces[0].push(new Piece("13", "Cavallo", true, "player2", "A-2", "CavalloPromosso", movesCavallo, movesGenOro));
-  player1Pieces[0].push(new Piece("14", "GenArg", true, "player2", "A-3", "GenArgPromosso", movesGenArg, movesGenOro));
-  player1Pieces[0].push(new Piece("15", "GenOro", false, "player2", "A-4", "", movesGenOro, ""));
-  player1Pieces[0].push(new Piece("16", "Re", false, "player2", "A-5", "", movesRe, ""));
-  player1Pieces[0].push(new Piece("17", "GenOro", false, "player2", "A-6", "", movesGenOro, ""));
-  player1Pieces[0].push(new Piece("18", "GenArg", true, "player2", "A-7", "GenArgPromosso", movesGenArg, movesGenOro));
-  player1Pieces[0].push(new Piece("19", "Cavallo", true, "player2", "A-8", "CavalloPromosso", movesCavallo, movesGenOro));
-  player1Pieces[0].push(new Piece("20", "Lanciere", true, "player2", "A-9", "LancierePromosso", movesLanciere, movesGenOro));
-
-  player1Pieces[1].push(new Piece("1", "Pedina", true, "player2", "G-9", "PedinaPromossa", movesPedina, movesGenOro));
-  player1Pieces[1].push(new Piece("2", "Pedina", true, "player2", "G-8", "PedinaPromossa", movesPedina, movesGenOro));
-  player1Pieces[1].push(new Piece("3", "Pedina", true, "player2", "G-7", "PedinaPromossa", movesPedina, movesGenOro));
-  player1Pieces[1].push(new Piece("4", "Pedina", true, "player2", "G-6", "PedinaPromossa", movesPedina, movesGenOro));
-  player1Pieces[1].push(new Piece("5", "Pedina", true, "player2", "G-5", "PedinaPromossa", movesPedina, movesGenOro));
-  player1Pieces[1].push(new Piece("6", "Pedina", true, "player2", "G-4", "PedinaPromossa", movesPedina, movesGenOro));
-  player1Pieces[1].push(new Piece("7", "Pedina", true, "player2", "G-3", "PedinaPromossa", movesPedina, movesGenOro));
-  player1Pieces[1].push(new Piece("8", "Pedina", true, "player2", "G-2", "PedinaPromossa", movesPedina, movesGenOro));
-  player1Pieces[1].push(new Piece("9", "Pedina", true, "player2", "G-1", "PedinaPromossa", movesPedina, movesGenOro));
-
-  player1Pieces[1].push(new Piece("10", "Alfiere", true, "player2", "H-8", "AlfierePromosso", movesAlfiere, movesAlfierePromosso));
-  player1Pieces[1].push(new Piece("11", "Torre", true, "player2", "H-2", "TorrePromossa", movesTorre, movesTorrePromossa));
-  player1Pieces[1].push(new Piece("12", "Lanciere", true, "player2", "I-9", "LancierePromosso", movesLanciere, movesGenOro));
-  player1Pieces[1].push(new Piece("13", "Cavallo", true, "player2", "I-8", "CavalloPromosso", movesCavallo, movesGenOro));
-  player1Pieces[1].push(new Piece("14", "GenArg", true, "player2", "I-7", "GenArgPromosso", movesGenArg, movesGenOro));
-  player1Pieces[1].push(new Piece("15", "GenOro", false, "player2", "I-6", "", movesGenOro, ""));
-  player1Pieces[1].push(new Piece("16", "Re", false, "player2", "I-5", "", movesRe, ""));
-  player1Pieces[1].push(new Piece("17", "GenOro", false, "player2", "I-4", "", movesGenOro, ""));
-  player1Pieces[1].push(new Piece("18", "GenArg", true, "player2", "I-3", "GenArgPromosso", movesGenArg, movesGenOro));
-  player1Pieces[1].push(new Piece("19", "Cavallo", true, "player2", "I-2", "CavalloPromosso", movesCavallo, movesGenOro));
-  player1Pieces[1].push(new Piece("20", "Lanciere", true, "player2", "I-1", "LancierePromosso", movesLanciere, movesGenOro));*/
+  pieces.push(new Piece("10", "Bishop", true, "player2", "H-8", "PromotedBishop", movesAlfiere, movesAlfierePromosso));
+  pieces.push(new Piece("11", "Rook", true, "player2", "H-2", "PromotedRook", movesTorre, movesTorrePromossa));
+  pieces.push(new Piece("12", "Lance", true, "player2", "I-9", "PromotedLance", movesLanciere, movesGenOro));
+  pieces.push(new Piece("13", "Knight", true, "player2", "I-8", "PromotedKnight", movesCavallo, movesGenOro));
+  pieces.push(new Piece("14", "SilverGeneral", true, "player2", "I-7", "PromotedSilverGeneral", movesGenArg, movesGenOro));
+  pieces.push(new Piece("15", "GoldGeneral", false, "player2", "I-6", "", movesGenOro, ""));
+  pieces.push(new Piece("16", "King", false, "player2", "I-5", "", movesRe, ""));
+  pieces.push(new Piece("17", "GoldGeneral", false, "player2", "I-4", "", movesGenOro, ""));
+  pieces.push(new Piece("18", "SilverGeneral", true, "player2", "I-3", "PromotedSilverGeneral", movesGenArg, movesGenOro));
+  pieces.push(new Piece("19", "Knight", true, "player2", "I-2", "PromotedKnight", movesCavallo, movesGenOro));
+  pieces.push(new Piece("20", "Lance", true, "player2", "I-1", "PromotedLance", movesLanciere, movesGenOro));
 
   return pieces;
 }
