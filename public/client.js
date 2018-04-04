@@ -1,19 +1,9 @@
 var socket = io();
 
 const container = document.getElementById("container");
-const boardCoordinates = Array("A", "B", "C", "D", "E", "F", "G", "H", "I");
+const sound = new Audio("/audio/move.mp3");
 var roomName;
 var possibleMoves;
-
-function convertPosition(position) {
-    var coordinate = position.split("-");
-  
-    var r = boardCoordinates[8 - boardCoordinates.indexOf(coordinate[0])];
-    var c = 10 - parseInt(coordinate[1]);
-  
-    var piecePosition = r + "-" + c;
-    return piecePosition;
-}
 
 $(document).ready(function(){
     // HANDLE CLICK EVENTS
@@ -82,10 +72,6 @@ $(document).ready(function(){
 
     $(document).on("click", "#surrenderButton", function(){
         socket.emit("surrender");
-    });
-
-    $(document).on("click", "#destroyRoomButton", function(){
-        socket.emit("destroy");
     });
 
     socket.on("roomAlreadyExists", function(roomName) {
@@ -166,12 +152,9 @@ $(document).ready(function(){
     });
 
     // SOCKET ACTIONS
-    socket.on("showRoom", function(roomName) {
-        $(".rooms > ul").append("<li>" + roomName + "<button id='joinRoomButton' value='" + roomName + "'>Join Room</button></li>");
-    });
 
-    socket.on("displayPage", function(pageContent) {
-        $(container).html(pageContent);
+    socket.on("displayPage", function(pageContent) { // display the page you are in
+        $("body").html(pageContent);
     });
 
     socket.on("connectedUsers", function(playersList) {
@@ -205,12 +188,6 @@ $(document).ready(function(){
         $("body").append($(element));
     });
     /*****GAME ACTIONS *******/
-
-    socket.on("roomDestroyed", function() {
-        $(".modal").remove();
-        $(".bottom-bar").remove();
-        alert("The room you were inside does not exist anymore. The creator has quit the room. You will be redirected to the main page.");
-    });
 
     socket.on("roomAbandoned", function() {
         $(".modal").remove();
@@ -248,7 +225,7 @@ $(document).ready(function(){
     });
 
     socket.on("showBar", function(element) {
-        $("body").append($(element));
+        $("#board-container").append($(element));
     });
 
     socket.on("highlightSelectedPiece", function(position) {
@@ -276,6 +253,8 @@ $(document).ready(function(){
 
     socket.on("clearAll", function() {
         $("td").html("");
+        $(".left-area > ul").html("");
+        $(".right-area > ul").html("");
     });
 
     socket.on("unbind", function() {
@@ -328,7 +307,7 @@ $(document).ready(function(){
         } else {
             $("[data-name=\"" + oldPosition + "\"]").html("");
         }
-        new Audio("/audio/move.mp3").play();
+        sound.play();
         if(piece.promoted == true) {
             $("[data-name=\"" + newPosition + "\"]").html("<img class='own' src='/images/layout/" + piece.upgradedName + ".svg'>");
         } else {
@@ -343,7 +322,7 @@ $(document).ready(function(){
         } else {
             $("[data-name=\"" + oldPosition + "\"]").html("");
         }
-        new Audio("/audio/move.mp3").play();
+        sound.play();
         if(piece.promoted == true) {
             $("[data-name=\"" + newPosition + "\"]").html("<img src='/images/layout/" + piece.upgradedName + "Opp.svg'>");
         } else {
@@ -359,7 +338,11 @@ $(document).ready(function(){
         $("#capturedBoard.opponent").append("<li data-name='" + piece.id + "'><img src='/images/layout/" + piece.name + "Opp.svg'></li>");
     });
 
-    /****ERRORS HANDLER****/
+    /****HANDLERS****/
+
+    socket.on("alert", function(msg) {
+        alert(msg);
+    });
 
     socket.on("error", function(msg) {
         console.log(msg);

@@ -160,9 +160,8 @@ const login = `
   </div>
   <div class="form">
     <input class="username" type="text" placeholder="Username" minlength="4" maxlength="16">
-    <input class="password" type="text" placeholder="Password" minlength="4" maxlength="16">
+    <span></span>
     <button id="loginButton">Connect</button>
-    <a href="#" class="forgot">Forgot your password?</a> - <a href="#" class="register">Register</a>
   </div>
   </div>
 </div>`;
@@ -297,12 +296,17 @@ var Room = function (id, name) {
     self.player2 = "";
     self.connectedUsers = 1;
     self.wantToStart = 0;
-    self.setPlayersPieces();
+    self.player1Pieces = createPieces();
   }
 
   self.setPlayersPieces = function() {
     self.player1Pieces = createPieces();
     self.player2Pieces = createPieces();
+  }
+
+  self.rematch = function() {
+    self.wantToStart = 0;
+    self.setPlayersPieces();
   }
 
   self.updateTurn = function(value) {
@@ -358,7 +362,7 @@ var Piece = function (id, name, upgradable, property, startPosition, upgradedNam
 /**** ROOM METHODS ******/
 Room.playerTurn = function (socket) {
   if(Room.list[socket.room].wantToStart == 0) {
-    socket.broadcast.to(socket.room).emit('askToStart', "<span>Your opponent wants to start the match</span><button id=\"startMatchButton\">Accept</button>");
+    socket.broadcast.to(socket.room).emit('askToStart', "<span>Your opponent wants to start the match</span><button id=\"startMatchButton\" class=\"accept\">Accept</button>");
     socket.emit('askToStart', "<span>Waiting for the reply...</span>");
   } else if(Room.list[socket.room].wantToStart == 1) {
     socket.broadcast.to(socket.room).emit('askToStart', "<span>Your opponent accepted your match request</span>");
@@ -383,20 +387,26 @@ Player.onConnect = function (socket, playerName) {
   
   socket.on('createRoom', function(roomName){ // create room
 
-    player.createRoom();
+    if(Room.list[roomName] == undefined || Room.list[roomName] == null){
+      player.createRoom();
 
-    io.in(mainRoom).emit('connectedUsers', Player.list);
-    socket.leave(mainRoom);
+      io.in(mainRoom).emit('connectedUsers', Player.list);
+      socket.leave(mainRoom);
 
-    player.setFaction("black");
-    var room = Room(socket.uniqueId, roomName);
+      player.setFaction("black");
+      var room = Room(socket.uniqueId, roomName);
 
-    socket.room = roomName;
-    socket.join(socket.room);
-    socket.broadcast.emit("rooms", Room.list, socket.room);
-    socket.emit("displayPage", board); // send to user the main page
-    io.in(socket.room).emit("updateTopBar", "self", "You");
-    socket.emit("displayPieces", room.player1Pieces);
+      socket.room = roomName;
+      socket.join(socket.room);
+      socket.broadcast.emit("rooms", Room.list, socket.room);
+      socket.emit("displayPage", board); // send to user the main page
+      io.in(socket.room).emit("updateTopBar", "self", "You");
+      socket.emit("displayPieces", room.player1Pieces);
+      socket.emit('showButton', "<button id=\"destroyRoomButton\" class=\"destroy\">Quit</button>");
+      socket.emit('showBar', "<div class='bottom-bar'><button id=\"surrenderButton\">Surrender</button><button id=\"quitMatchButton\">Quit</button></div>");
+    } else {
+      socket.emit("roomAlreadyExists", roomName);
+    }
   });
 
   socket.on("joinRoom", function(roomName){ // join room
@@ -410,16 +420,15 @@ Player.onConnect = function (socket, playerName) {
     socket.leave(mainRoom);
 
     Room.list[socket.room].setOpponent(player);
-    //console.log(socket.room);
     socket.broadcast.emit("rooms", Room.list, socket.room);
-    socket.broadcast.to(socket.room).emit('joined', player.name + " has joined the room");
 
     socket.emit('displayPage', board); // send to user the main page
     socket.emit('updateTopBar', 'self', "You");
     socket.emit('updateTopBar', 'opponent', Room.list[roomName].player1.name);
     socket.broadcast.to(socket.room).emit('updateTopBar', 'opponent', player.name);
     socket.emit('displayPieces', Room.list[roomName].player2Pieces);
-    socket.emit('showButton', "<button id=\"startMatchButton\">Start Match</button>");
+    socket.emit('showBar', "<div class='bottom-bar'><button id=\"surrenderButton\">Surrender</button><button id=\"quitMatchButton\">Quit</button></div>");
+    socket.emit('showButton', "<button id=\"startMatchButton\">Start Match</button><button id=\"quitMatchButton\">Quit</button>");
   });
 
   socket.on("rules", function() {
@@ -529,29 +538,110 @@ Player.onConnect = function (socket, playerName) {
   });
 
   socket.on('matchStart', function() {
-    //console.log(Room.list[socket.room]);
     if (Room.list[socket.room].player1 != undefined && Room.list[socket.room].player2 != undefined) {
       Room.playerTurn(socket);
     }
   });
 
+  socket.on("rematch", function() {
+    if(Room.list[socket.room].turn == "black") {
+      Room.list[socket.room].turn == "white";
+    } else {
+      Room.list[socket.room].turn == "black";
+    }
+    Room.list[socket.room].rematch();
+    io.in(socket.room).emit("clearAll");
+    socket.broadcast.to(Room.list[socket.room].player1.id).emit('displayPieces', Room.list[socket.room].player1Pieces);
+    socket.broadcast.to(Room.list[socket.room].player2.id).emit('displayPieces', Room.list[socket.room].player2Pieces);
+    Room.playerTurn(socket);
+  });
+
+  socket.on("surrender", function() {
+    if(Room.list[socket.room].wantToStart == 2) {
+      surrender(socket);
+    }
+  });
+
+  socket.on("quit", function() {
+    if(Player.list[socket.uniqueId].insideRoom == true && Player.list[socket.uniqueId].roomCreated == true) {
+      destroy(socket);
+    } else {
+      quit(socket);
+    }
+  });
+
+  socket.on("destroy", function() {
+    
+    destroy(socket);
+
+  });
+
+  socket.on("abandon", function() {
+    
+    socket.join(mainRoom);
+
+  });
+
+}
+
+function destroy(socket) {
+  io.in(socket.room).emit("clearAll");
+  socket.broadcast.to(socket.room).emit("roomDestroyed");
+  socket.broadcast.to(socket.room).emit("displayPage", page);
+  socket.broadcast.to(socket.room).emit("abandon", page);
+
+  Player.list[Room.list[socket.room].player1.uniqueId].destroyRoom();
+  if(Room.list[socket.room].player2 != "") {
+    Player.list[Room.list[socket.room].player2.uniqueId].abandonRoom();
+  }
+
+  Room.list[socket.room].destroyRoom(socket.room);
+
+  resendPage(socket); // send to user the main page
+}
+
+function quit(socket) {
+  var room = Room.list[socket.room];
+  io.in(socket.room).emit("clearAll");
+  socket.broadcast.to(socket.room).emit('showButton', "<button id=\"destroyRoomButton\" class=\"destroy\">Quit</button>");
+  socket.broadcast.to(socket.room).emit("updateTopBar", "opponent", "Waiting for opponent...");
+  socket.broadcast.to(socket.room).emit("roomAbandoned");
+  
+  Player.list[room.player2.uniqueId].abandonRoom();
+
+  room.abandonRoom();
+  
+  if (room.turn == "white") {
+    room.updateTurn("black");
+  } else {
+    room.updateTurn("white");
+  }
+  //Room.list[socket.room].player1.setFaction("black");
+
+  socket.broadcast.to(socket.room).emit("displayPieces", Room.list[socket.room].player1Pieces);
+  resendPage(socket); // send to user the main page
+}
+
+function surrender(socket) {
+  socket.broadcast.to(socket.room).emit('turn', "Your opponent did surrender");
+  socket.emit('endGame', "<div class='modal'><div class='modal-box'><span>You lost</span><ul><li><button class='rematch' value='Rematch'>Rematch</button></li><li><button value='Quit' class='quit'>Quit</button></li></ul></div></div>");
+  socket.broadcast.to(socket.room).emit('endGame', "<div class='modal'><div class='modal-box'><span>You won</span><div class='end'><img src='/images/layout/crown.svg'></div><button value='Close' class='close'>Close</button></div></div>");
+}
+
+function resendPage(socket) {
+  socket.leave(socket.room);
+  socket.join(mainRoom);
+  socket.emit('displayPage', page); // send to user the main page
+  io.in(mainRoom).emit('connectedUsers', Player.list);
+  io.in(mainRoom).emit('rooms', Room.list);
 }
 
 Player.onDisconnect = function (socket) {
-  if(Player.list[socket.uniqueId].insideRoom == true) {
-    socket.broadcast.to(socket.room).emit("updateTopBar", "opponent", "Waiting for opponent...");
-    socket.broadcast.to(socket.room).emit('askToStart', "");
-    socket.broadcast.to(socket.room).emit('clearAll', "");
-    socket.broadcast.to(socket.room).emit("displayPieces", Room.list[socket.room].player1Pieces);
-    socket.leave(socket.room);
-  }
   
-  socket.leave(mainRoom);
   if(Player.list[socket.uniqueId].insideRoom == true && Player.list[socket.uniqueId].roomCreated == true) {
-    Room.list[socket.room].abandonRoom();
-    delete Room.list[socket.room];
-  } else if(Room.list[socket.room] != undefined){
-    Room.list[socket.room].abandonRoom();
+    destroy(socket);
+  } else if(Player.list[socket.uniqueId].insideRoom == true){
+    quit(socket);
   }
   delete Player.list[socket.uniqueId];
   io.in(mainRoom).emit('connectedUsers', Player.list);
@@ -574,42 +664,20 @@ io.sockets.on('connection', function (socket) {
     }
   });
 
-  socket.on('login', function(playerName, typedPassword){
-    db.users.find({username: playerName, password: typedPassword}, function(err, res){
-      if(res.length > 0) {
-        socket.emit('displayPage', page); // send to user the main page
-        socket.join(mainRoom);
-        socket.uniqueId = Math.random(); // generate a random socket id
-        SOCKET_LIST[socket.uniqueId] = socket; // insert into socket list the new player socket
+  socket.on('login', function(playerName){
+    socket.leave(socket.room);
+    //db.users.find({username: playerName, password: typedPassword}, function(err, res){
+    socket.emit('displayPage', page); // send to user the main page
+    socket.join(mainRoom);
+    socket.uniqueId = Math.random(); // generate a random socket id
+    SOCKET_LIST[socket.uniqueId] = socket; // insert into socket list the new player socket
 
-        Player.onConnect(socket, playerName); // call the on connect function
+    Player.onConnect(socket, playerName); // call the on connect function
     
-        io.in(mainRoom).emit('connectedUsers', Player.list);
+    io.in(mainRoom).emit('connectedUsers', Player.list);
 
-        socket.emit('rooms', Room.list);
-      } else {
-        return false;
-      }
-    });
-
-    socket.on('register', function(playerName, typedPassword, typedEmail){
-      db.users.insert({username: playerName, password: typedPassword, email: typedEmail}, function(err, res){
-        if(res.length > 0) {
-          socket.emit('displayPage', page); // send to user the main page
-          socket.join(mainRoom);
-          socket.uniqueId = Math.random(); // generate a random socket id
-          SOCKET_LIST[socket.uniqueId] = socket; // insert into socket list the new player socket
-  
-          Player.onConnect(socket, playerName); // call the on connect function
-      
-          io.in(mainRoom).emit('connectedUsers', Player.list);
-  
-          socket.emit('rooms', Room.list);
-        } else {
-          return false;
-        }
-      });
-    });
+    socket.emit('rooms', Room.list);
+    //});
     
     // on user disconnect, remove player from socket list,
     // remove it from player list and leave the main room
@@ -625,6 +693,7 @@ io.on('connect', function (socket) {
   socket.on('movements', function (selected) {
     var room = Room.list[socket.room]; // get room from room list
     var moves;
+    console.log(room.turn);
     if (room.turn == "black" && findObjectByTripleKey(room.player1Pieces, 'property', 'currentPosition', 'captured', 'player1', selected, false)) {
 
       moves = possibleMoves(room.player1Pieces, selected); // assign to possible moves
@@ -804,13 +873,14 @@ function updateTurns(socket) {
   } else {
     room.updateTurn("white");
   }
+  console.log("turn: " + room.turn);
   socket.emit('turn', "");
   socket.broadcast.to(socket.room).emit('turn', "your turn");
 }
 
 function gameEnd(socket) {
-  socket.emit('endGame', 'won', 'crown');
-  socket.broadcast.to(socket.room).emit('endGame', 'lost', '');
+  socket.broadcast.to(socket.room).emit('endGame', "<div class='modal'><div class='modal-box'><span>You lost</span><ul><li><button class='rematch' value='Rematch'>Rematch</button></li><li><button value='Quit' class='quit'>Quit</button></li></ul></div></div>");
+  socket.emit('endGame', "<div class='modal'><div class='modal-box'><span>You won</span><div class='end'><img src='/images/layout/crown.svg'></div><button value='Close' class='close'>Close</button></div></div>");
 }
 
 /** MOVEMENTS FUNCTIONS */

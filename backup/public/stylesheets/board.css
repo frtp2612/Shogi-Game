@@ -37,12 +37,17 @@ span.turn > span {
 }
 
 span.turn > button {
-	width: 100%;
+	width: 50%;
 	height: 40px;
 	background-color: rgba(230, 230, 230, 1);
 	color: rgba(40, 46, 56, 1);
 	margin: 0;
-	display: block;
+	display: inline-block;
+}
+
+span.turn > button.destroy,
+span.turn > button.accept {
+	width: 100%;
 }
 
 span.turn > button:hover {
@@ -57,6 +62,7 @@ span.turn > button:hover {
 	width: 612px;
 	height: 612px;
 	margin: 32px 0;
+	margin-bottom: 72px;
   
 	border: 1px solid rgba(42, 46, 52, 1);
 	/*background-image: url("/images/layout/boardBackground.svg");*/
@@ -126,6 +132,7 @@ tr + tr {
 	display: grid;
 
 	margin: 32px 0;
+	margin-bottom: 72px;
 	grid-template-columns: 1fr;
 	grid-template-rows: 1fr;
 	grid-area: rightContainer;
@@ -139,6 +146,7 @@ tr + tr {
 	display: grid;
 
 	margin: 32px 0;
+	margin-bottom: 72px;
 	grid-template-columns: 1fr;
 	grid-template-rows: 1fr;
 	grid-area: leftContainer;
@@ -264,6 +272,20 @@ div.modal > div.modal-box > ul > li {
 	float: left;
 	text-align: center;
 }
+
+div.modal > div.modal-box > button.close {
+	width: 100%;
+	height: 32px;
+	border: none;
+	outline: none;
+	font-size: 14px;
+	border-radius: 6px;
+	-moz-border-radius: 6px;
+	-webkit-border-radius: 6px;
+	color: rgba(242, 242, 242, 1);
+	cursor: pointer;
+	margin-top: 8px;
+}
   
 div.modal li button {
 	width: 90%;
@@ -281,9 +303,13 @@ div.modal li button {
 }
   
 div.modal li:first-child button {
-	background-color: rgba(35, 177, 108, 1);
+	background-color: rgba(56, 62, 72, 1);
 	font-size: 14px;
-	color: rgba(56, 62, 72, 1);
+	color: rgba(242, 242, 242, 1);
+}
+
+div.modal li:first-child button:hover {
+	background-color: rgba(35, 177, 108, 1);
 }
 
 div.modal > div.modal-box > div.end {
@@ -297,4 +323,31 @@ div.modal > div.modal-box > div.end {
 div.modal > div.modal-box > div.end > img {
 	width: 96px;
 	height: 96px;
+}
+
+
+
+
+div.bottom-bar {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	width: 100vw;
+	height: 40px;
+	background-color: rgba(40, 46, 56, 1);
+
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr 1fr;
+	grid-template-areas: 
+			". buttonLeft buttonRight .";
+}
+
+div.bottom-bar > button:first-child {
+	grid-area: buttonLeft;
+	height: 40px;
+}
+
+div.bottom-bar > button:last-child {
+	grid-area: buttonRight;
+	height: 40px;
 }

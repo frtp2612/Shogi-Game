@@ -73,7 +73,27 @@ $(document).ready(function(){
 
     $(document).on("click", "#startMatchButton", function(){
         socket.emit("matchStart");
-        $(this).remove();
+    });
+
+    $(document).on("click", "#quitMatchButton", function(){
+        $(".bottom-bar").remove();
+        socket.emit("quit");
+    });
+
+    $(document).on("click", "#surrenderButton", function(){
+        socket.emit("surrender");
+    });
+
+    $(document).on("click", "#destroyRoomButton", function(){
+        socket.emit("destroy");
+    });
+
+    socket.on("roomAlreadyExists", function(roomName) {
+        alert("The room: " + roomName + " already exists. Please choose another name.");
+    });
+
+    socket.on("abandon", function() {
+        socket.emit("abandon");
     });
 
     socket.on("turn", function(msg) {
@@ -186,6 +206,17 @@ $(document).ready(function(){
     });
     /*****GAME ACTIONS *******/
 
+    socket.on("roomDestroyed", function() {
+        $(".modal").remove();
+        $(".bottom-bar").remove();
+        alert("The room you were inside does not exist anymore. The creator has quit the room. You will be redirected to the main page.");
+    });
+
+    socket.on("roomAbandoned", function() {
+        $(".modal").remove();
+        alert("Your opponent has left the room.");
+    });
+
     socket.on('updateTopBar', function(who, player) {
         $(".top-bar > ." + who).text(player);
     });
@@ -216,6 +247,10 @@ $(document).ready(function(){
         $(".turn").html(element);
     });
 
+    socket.on("showBar", function(element) {
+        $("body").append($(element));
+    });
+
     socket.on("highlightSelectedPiece", function(position) {
         $("[data-name=\"" + position + "\"]").addClass("active");
     });
@@ -243,14 +278,31 @@ $(document).ready(function(){
         $("td").html("");
     });
 
-    socket.on("endGame", function(msg, img) {
-        var win = "<div class='modal'><div class='modal-box'><span>You " + msg +"</span><div class='end'><img src='/images/layout/"+ img +".svg'></div><button value='Close' class='close'>Close</button></div></div>";
-        var lose = "<div class='modal'><div class='modal-box'><span>You " + msg +"</span><ul><li><button value='Rematch'>Rematch</button></li><li><button value='Close' class='close'>Close</button></li></ul></div></div>";
-        if(msg == "won") {
-            $("body").append($(win));
-        } else {
-            $("body").append($(lose));
-        }
+    socket.on("unbind", function() {
+        $("td").unbind("click");
+        $("#capturedBoard.own").unbind("click");
+
+        $(".turn").text("Waiting...");
+    });
+
+    socket.on("endGame", function(msg) {
+        $("body").append($(msg));
+
+        $(document).on("click", ".rematch", function() {
+            socket.emit("rematch");
+            $(".modal").remove();
+            $(".turn").text("Waiting...");
+        });
+    
+        $(document).on("click", ".quit", function() {
+            socket.emit("quit");
+            $(".modal").remove();
+            $(".bottom-bar").remove();
+        });
+
+        $("td").unbind("click");
+        $("#capturedBoard.own").unbind("click");
+
     });
 
     socket.on("wantToUpgrade", function(piece, opponentPiece, position){

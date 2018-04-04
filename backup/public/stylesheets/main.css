@@ -43,8 +43,7 @@ div#container {
           "leftMost . . . turn . . ."
           "leftMost topContentArea topContentArea topContentArea topContentArea topContentArea topContentArea topContentArea"
           "leftMost . leftContainer . contentArea . rightContainer ."
-          "leftMost . . align align align . .";
-  max-height: 100vh;
+          "leftMost . . . align . . .";
 }
 
 div.connectedUsers {
