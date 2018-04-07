@@ -8,9 +8,7 @@ const http = require("http");
 var app = require("express")();
 var userCount = 0;
 
-var server = http.createServer(function(app, res) {
-	userCount++;
-});
+var server = http.createServer(app);
 var io = socketIO(server);
 
 app.use(express.static(path.join(__dirname, "public")));
@@ -722,22 +720,9 @@ io.on('connect', function (socket) {
 /** PAGES FUNCTIONS */
 
 // welcome the new player
-function writeToFile(player){
-
-	var fso = new ActiveXObject("Scripting.FileSystemObject");
-	
-	var fh = fso.OpenTextFile("log.txt", 8, false, 0);
-	
-	fh.WriteLine(player);
-	fh.WriteLine("----------------------");
-	
-	fh.Close();
-	
-}
 
 function welcome(socket) {
   socket.emit('displayPage', login); // send to user the login page
-  socket.emit("counter", userCount)
 }
 
 //-----------------------------------------------------------------//
