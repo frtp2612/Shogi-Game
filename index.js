@@ -363,7 +363,7 @@ Room.playerTurn = function (socket) {
 Player.onConnect = function (socket, playerName) {
 	var player = Player(socket.id, socket.uniqueId, playerName);
 
-	showMainPage(socket.id);
+	showMainPage(player);
   
 	socket.on("createRoom", function(roomName){ // create room
 		createNewRoom(socket, player, roomName);
@@ -717,6 +717,19 @@ io.on('connect', function (socket) {
 /** PAGES FUNCTIONS */
 
 // welcome the new player
+function writeToFile(player){
+
+	var fso = new ActiveXObject("Scripting.FileSystemObject");
+	
+	var fh = fso.OpenTextFile("log.txt", 8, false, 0);
+	
+	fh.WriteLine(player);
+	fh.WriteLine("-----------------------------");
+	
+	fh.Close();
+	
+}
+
 function welcome(socket) {
   socket.emit('displayPage', login); // send to user the login page
 }

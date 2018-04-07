@@ -187,7 +187,6 @@ $(document).ready(function(){
     socket.on("displayRules", function(element) {
         $("body").append($(element));
     });
-    /*****GAME ACTIONS *******/
 
     socket.on("roomAbandoned", function() {
         $(".modal").remove();
@@ -213,7 +212,7 @@ $(document).ready(function(){
     });
 
     socket.on("joined", function(msg) {
-        console.log(msg);
+        //console.log(msg);
     });
 
     socket.on("askToStart", function(msg) {
@@ -345,6 +344,6 @@ $(document).ready(function(){
     });
 
     socket.on("error", function(msg) {
-        console.log(msg);
+        alert(msg);
     });
 });
