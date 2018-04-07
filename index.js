@@ -6,7 +6,11 @@ const PORT = process.env.PORT || 5000;
 const http = require("http");
 
 var app = require("express")();
-var server = http.createServer(app);
+var userCount = 0;
+
+var server = http.createServer(function(app, res) {
+	userCount++;
+});
 var io = socketIO(server);
 
 app.use(express.static(path.join(__dirname, "public")));
@@ -363,7 +367,8 @@ Room.playerTurn = function (socket) {
 Player.onConnect = function (socket, playerName) {
 	var player = Player(socket.id, socket.uniqueId, playerName);
 
-	showMainPage(player);
+	showMainPage(socket.id);
+	//writeToFile(player);
   
 	socket.on("createRoom", function(roomName){ // create room
 		createNewRoom(socket, player, roomName);
@@ -724,7 +729,7 @@ function writeToFile(player){
 	var fh = fso.OpenTextFile("log.txt", 8, false, 0);
 	
 	fh.WriteLine(player);
-	fh.WriteLine("-----------------------------");
+	fh.WriteLine("----------------------");
 	
 	fh.Close();
 	
@@ -732,6 +737,7 @@ function writeToFile(player){
 
 function welcome(socket) {
   socket.emit('displayPage', login); // send to user the login page
+  socket.emit("counter", userCount)
 }
 
 //-----------------------------------------------------------------//
