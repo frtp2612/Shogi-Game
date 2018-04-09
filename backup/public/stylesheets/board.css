@@ -1,5 +1,18 @@
+div#board-container {
+	display: grid;
+  
+	grid-template-columns: 120px 1fr 1fr 1fr 120px;
+	grid-template-areas: 
+	". . top . ."
+	". . turns . ."
+	". oppDrop board . ."
+	". . board . ."
+	". . board selfDrop ."
+	". . buttons . .";
+}
+
 div.top-bar {
-	grid-area: topBar;
+	grid-area: top;
 
 	height: 40px;
 	background-color: rgba(40, 46, 56, 1);
@@ -20,7 +33,7 @@ div.top-bar {
 }
 
 span.turn {
-	grid-area: turn;
+	grid-area: turns;
 	height: auto;
 	line-height: 40px;
 	text-align: center;
@@ -29,6 +42,7 @@ span.turn {
 	-moz-border-radius: 3px;
 	-webkit-border-radius: 3px;
 	overflow: hidden;
+	margin-bottom: 32px;
 }
 
 span.turn > span {
@@ -57,17 +71,13 @@ span.turn > button:hover {
 
 /**** BOARD STYLE ***/
 
+
 #board {
-	grid-area: contentArea;
-	width: 612px;
-	height: 612px;
-	margin: 32px 0;
-	margin-bottom: 72px;
-  
+	grid-area: board;
 	border: 1px solid rgba(42, 46, 52, 1);
-	/*background-image: url("/images/layout/boardBackground.svg");*/
 	background-color: rgba(247, 218, 186, 1);
 	border-collapse: collapse;
+	justify-self: center;
 }
 
 .rhe {
@@ -90,12 +100,12 @@ tr + tr {
 	border-top: 1px solid rgb(224, 185, 127);
 }
   
-  td {
+td {
 	text-align: center;
 	border-left: 1px solid rgba(42, 46, 52, 0.8);
-	width: 68px;
-	height: 68px;
-  }
+	width: 58px;
+	height: 58px;
+}
   
   td.active {
 	background-color: rgba(232, 130, 128, 1);
@@ -109,82 +119,50 @@ tr + tr {
 	cursor: default;
   }
   
-  td > img {
+table img {
 	cursor: default;
-	width: 65px;
-	height: 65px;
+	width: 55px;
+	height: 55px;
 	display: block;
-  }
+}
   
-  td > img.own {
+img.own {
 	cursor: pointer;
-  }
+}
   
-  td > img.clickable {
+img.clickable {
 	cursor: pointer;
-  }
+}
   
-  td + td {
+td + td {
 	border-left: 1px solid #e0b97f;
-  }
+}
   
-  div.right-area {
-	display: grid;
+div.right-area,
+div.left-area {
+	justify-self: center;
+	width: auto;
+	height: auto;
+}
 
-	margin: 32px 0;
-	margin-bottom: 72px;
-	grid-template-columns: 1fr;
-	grid-template-rows: 1fr;
-	grid-area: rightContainer;
-	grid-template-areas:
-			"."
-			"."
-			"bottom";
-  }
-  
-  div.left-area {
-	display: grid;
+div.left-area {
+	grid-area: oppDrop;
+}
 
-	margin: 32px 0;
-	margin-bottom: 72px;
-	grid-template-columns: 1fr;
-	grid-template-rows: 1fr;
-	grid-area: leftContainer;
-	grid-template-areas:
-			"top"
-			"."
-			".";
-  }
-  
-  div.right-area > ul,
-  div.left-area > ul {
-	width: 260px;
-	height: 260px;
-	margin: 0 auto;
-  
+div.right-area {
+	grid-area: selfDrop;
+}
+
+div.right-area > ul,
+div.left-area > ul {
+	width: 100%;
 	border: 1px solid rgba(42, 46, 52, 0.8);
-	/*background-color: rgba(255, 243, 196, 1);*/
-	
-	border-collapse: collapse;
-  
-	overflow-y: auto;
-  
-	/*background-image: url("/images/layout/board.svg");*/
+	overflow: hidden;
 	background-color: rgba(247, 218, 186, 1);
-  }
-  
-  div.right-area > ul.own {
-	grid-area: bottom;
-  }
-  
-  div.left-area > ul.opponent {
-	grid-area: top;
-  }
+}
   
 div.right-area > ul > li,
 div.left-area > ul > li {
-	width: 65px;
-	height: 65px;
 	float: left;
 }
   
@@ -206,7 +184,7 @@ div.modal {
 	left: 0;
 	width: 100vw;
 	height: 100vh;
-	background-color: rgba(0, 0, 0, 0.2);
+	background-color: rgba(0, 0, 0, 0.4);
 	z-index: 9999;
 }
   
@@ -325,29 +303,248 @@ div.modal > div.modal-box > div.end > img {
 	height: 96px;
 }
 
-
-
-
 div.bottom-bar {
-	position: fixed;
-	bottom: 0;
-	left: 0;
-	width: 100vw;
-	height: 40px;
-	background-color: rgba(40, 46, 56, 1);
-
+	grid-area: buttons;
 	display: grid;
+
 	grid-template-columns: 1fr 1fr 1fr 1fr;
-	grid-template-areas: 
-			". buttonLeft buttonRight .";
+	grid-template-areas:
+	". buttonLeft buttonRight .";
+
+	margin: 32px 0;
 }
 
 div.bottom-bar > button:first-child {
 	grid-area: buttonLeft;
 	height: 40px;
+
+	background-color: rgba(230, 230, 230, 1);
+	color: rgba(40, 46, 56, 1);
+
+	border-radius: 3px;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
 }
 
 div.bottom-bar > button:last-child {
+
+	background-color: rgba(230, 230, 230, 1);
+	color: rgba(40, 46, 56, 1);
+
 	grid-area: buttonRight;
 	height: 40px;
+
+	border-radius: 3px;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+}
+
+div.bottom-bar button:hover {
+	background-color: rgba(232, 68, 86, 1);
+	color: rgba(242, 242, 242, 1);
+}
+
+@media only screen and (max-width: 600px) {
+	div#board-container {	  
+		grid-template-columns: 16px 1fr 1fr 1fr 16px;
+		grid-template-areas: 
+		"top top top top top"
+		". turns turns turns ."
+		". oppDrop oppDrop oppDrop ."
+		". board board board ."
+		". selfDrop selfDrop selfDrop ."
+		". buttons buttons buttons .";
+	}
+
+	div.right-area > ul,
+	div.left-area > ul {
+		width: 100%;
+		height: 35px;
+	}
+
+	div.right-area > ul > li,
+	div.left-area > ul > li {
+		width: 38px;
+		height: 38px;
+	}
+
+	td {
+		width: 38px;
+		height: 38px;
+	}
+
+    table img {
+		width: 35px;
+		height: 35px;
+	}
+
+	div.right-area {
+		margin-top: 16px;
+		justify-self: initial;
+	}
+
+	div.left-area {
+		margin-bottom: 16px;
+		justify-self: initial;
+	}
+}
+
+/* Small devices (portrait tablets and large phones, 600px and up) */
+@media only screen and (min-width: 600px) {
+
+	div#board-container {	 
+		grid-template-columns: 16px 1fr 1fr 1fr 16px;
+		grid-template-areas: 
+		". top top top ."
+		". turns turns turns ."
+		". . oppDrop . ."
+		". . board . ."
+		". . selfDrop . ."
+		". buttons buttons buttons .";
+	}
+
+	div.right-area {
+		margin-top: 16px;
+		justify-self: initial;
+	}
+
+	div.left-area {
+		margin-bottom: 16px;
+		justify-self: initial;
+	}
+
+	div.right-area > ul,
+	div.left-area > ul {
+		width: 100%;
+		height: 45px;
+	}
+
+	div.right-area > ul > li,
+	div.left-area > ul > li {
+		width: 48px;
+		height: 48px;
+	}
+	
+	td {
+		width: 48px;
+		height: 48px;
+	}
+
+    table img {
+		width: 45px;
+		height: 45px;
+	}
+}
+
+/* Medium devices (landscape tablets, 768px and up) */
+@media only screen and (min-width: 768px) {
+
+} 
+
+/* Large devices (laptops/desktops, 992px and up) */
+@media only screen and (min-width: 992px) {
+	div#board-container {
+		grid-template-columns: 72px 1fr 1fr 1fr 72px;
+	}
+
+	div#board-container {	  
+		grid-template-areas: 
+		". . top . ."
+		". . turns . ."
+		". oppDrop board . ."
+		". . board . ."
+		". . board selfDrop ."
+		". . buttons . .";
+	}
+
+	div.right-area > ul,
+	div.left-area > ul {
+		width: 225px;
+		height: 180px;
+	}
+
+	div.right-area > ul > li,
+	div.left-area > ul > li {
+		width: 48px;
+		height: 48px;
+	}
+
+	div.right-area {
+		margin-bottom: 0;
+		justify-self: center;
+	}
+
+	div.left-area {
+		margin-top: 0;
+		justify-self: center;
+	}
+
+	td {
+		width: 48px;
+		height: 48px;
+	}
+
+    table img {
+		width: 45px;
+		height: 45px;
+	}
+} 
+
+/* Extra large devices (large laptops and desktops, 1200px and up) */
+@media only screen and (min-width: 1200px) {
+	div#board-container {
+		grid-template-columns: 96px 1fr 1fr 1fr 96px;
+	}
+
+	div.right-area > ul,
+	div.left-area > ul {
+		width: 275px;
+		height: 220px;
+	}
+
+	div.right-area > ul > li,
+	div.left-area > ul > li {
+		width: 58px;
+		height: 58px;
+	}
+
+	td {
+		width: 58px;
+		height: 58px;
+	}
+
+    table img {
+		width: 55px;
+		height: 55px;
+	}
+
+}
+
+/* Extra large devices (large laptops and desktops, 1200px and up) */
+@media only screen and (min-width: 1500px) {
+	div#board-container {
+		grid-template-columns: 120px 1fr 1fr 1fr 120px;
+	}
+
+	div.right-area > ul,
+	div.left-area > ul {
+		width: 325px;
+		height: 260px;
+	}
+
+	div.right-area > ul > li,
+	div.left-area > ul > li {
+		width: 68px;
+		height: 68px;
+	}
+
+	td {
+		width: 68px;
+		height: 68px;
+	}
+
+    table img {
+		width: 65px;
+		height: 65px;
+    }
 }
