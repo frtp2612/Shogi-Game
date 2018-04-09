@@ -168,7 +168,7 @@ const login = `
     		<button id="loginButton">Connect</button>
 		</div>
 	</div>
-	<h4 class="copyright">Copyright © 2018 Paolo Forti. All rights reserved.</h4>
+	<h4 class="copyright">Copyright © 2018 Playshogi.club. All rights reserved.</h4>
 </div>
 `;
 
