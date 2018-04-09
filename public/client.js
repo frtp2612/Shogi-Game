@@ -39,6 +39,10 @@ $(document).ready(function(){
         socket.emit("rules");
     });
 
+    $(document).on("click", ".contact", function() {
+        window.open('mailto:playshogionline@gmail.com?subject=subject&body=body');
+    });
+
     $(document).on("click", ".close", function() {
         $(".modal").remove();
     });

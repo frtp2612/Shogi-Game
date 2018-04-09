@@ -67,257 +67,257 @@ h3.beta {
 }
 
 div#main-container {
-  display: grid;
+	display: grid;
 
-  grid-template-columns: 1fr 4fr;
-  grid-template-areas:
-          "leftMost top"
-          "leftMost content";
+	grid-template-columns: 1fr 4fr;
+	grid-template-areas:
+					"leftMost top"
+					"leftMost content";
 }
 
 div.connectedUsers {
-  grid-area: leftMost;
-  background-color: rgba(242, 242, 242, 1);
-  height: 100vh;
-  max-height: 100vh;
+	grid-area: leftMost;
+	background-color: rgba(242, 242, 242, 1);
+	height: 100vh;
+	max-height: 100vh;
 }
 
 div.connectedUsers > span {
-  width: 100%;
-  display: block;
-  height: 56px;
-  line-height: 56px;
-  text-indent: 16px;
-  font-size: 18px;
-  background-color: rgba(219, 64, 81,1);
-  color: rgba(242, 242, 242, 1);
+	width: 100%;
+	display: block;
+	height: 56px;
+	line-height: 56px;
+	text-indent: 16px;
+	font-size: 18px;
+	background-color: rgba(219, 64, 81,1);
+	color: rgba(242, 242, 242, 1);
 }
 
 div.connectedUsers > ul {
-  width: 100%;
-  height: calc(100vh - 56px);
-  overflow-y: auto;
+	width: 100%;
+	height: calc(100vh - 56px);
+	overflow-y: auto;
 }
 
 div.connectedUsers > ul > li {
-  width: calc(100% - 32px);
-  height: 32px;
-  line-height: 32px;
-  margin: 0 16px;
-  margin-top: 8px;
+	width: calc(100% - 32px);
+	height: 32px;
+	line-height: 32px;
+	margin: 0 16px;
+	margin-top: 8px;
 
-  border-radius: 3px;
-  -moz-border-radius: 3px;
-  -webkit-border-radius: 3px;
+	border-radius: 3px;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
 
-  cursor: pointer;
+	cursor: pointer;
 }
 
 div.connectedUsers > ul > li:first-child {
-  margin-top: 16px;
+	margin-top: 16px;
 }
 
 div.connectedUsers > ul > li:hover {
-  background-color: rgba(56, 62, 72, 1);
-  color: rgba(242, 242, 242, 1);
-  -webkit-box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
-  -moz-box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
-  box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
+	background-color: rgba(56, 62, 72, 1);
+	color: rgba(242, 242, 242, 1);
+	-webkit-box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
+	-moz-box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
+	box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
 }
 
 div.connectedUsers > ul > li:before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  margin: 13px;
-  background-color: rgba(35, 177, 108, 1);
-  border-radius: 180px;
-  -moz-border-radius: 180px;
-  -webkit-border-radius: 180px;
-  cursor: pointer;
-  display: block;
-  float: left;
+	content: "";
+	width: 6px;
+	height: 6px;
+	margin: 13px;
+	background-color: rgba(35, 177, 108, 1);
+	border-radius: 180px;
+	-moz-border-radius: 180px;
+	-webkit-border-radius: 180px;
+	cursor: pointer;
+	display: block;
+	float: left;
 }
 
 div.connectedUsers > ul > li.busy:before {
-  background-color: rgba(219, 64, 81, 1);
+	background-color: rgba(219, 64, 81, 1);
 }
 
 div.connectedUsers > ul > li:last-child {
-  margin-bottom: 16px;
+	margin-bottom: 16px;
 }
 
-div.createRoom {
-  grid-area: top;
-  background-color: rgba(40, 46, 56, 1);/*rgb(32, 40, 43);*/
-  height: 56px;
+div.nav-bar {
+	grid-area: top;
+	background-color: rgba(40, 46, 56, 1);/*rgb(32, 40, 43);*/
+	height: 56px;
 }
 
-div.createRoom > ul > li {
-  height: 100%;
-  line-height: 56px;
-  float: left;
-  margin-left: 24px;
-  color: rgba(212, 212, 212, 1);
+div.nav-bar > ul > li {
+	height: 100%;
+	line-height: 56px;
+	float: left;
+	margin-left: 24px;
+	color: rgba(212, 212, 212, 1);
 }
 
-div.createRoom > ul > li.rules {
-  cursor: pointer;
+div.nav-bar > ul > li.clickable {
+	cursor: pointer;
 }
 
-div.createRoom > ul > li:hover {
-  color: rgba(242, 242, 242, 1);
+div.nav-bar > ul > li:hover {
+	color: rgba(242, 242, 242, 1);
 }
 
-div.createRoom > ul > li > input,
-div.createRoom > ul > li > button {
-  float: left;
-  margin: 12px 0;
+div.nav-bar > ul > li > input,
+div.nav-bar > ul > li > button {
+	float: left;
+	margin: 12px 0;
 }
 
 input {
-  outline: none;
-  width: 240px;
-  height: 28px;
-  border: 1px solid rgba(56, 62, 72, 1);/*rgb(48, 56, 59);*/
-  background-color: rgba(56, 62, 72, 1);
-  text-indent: 8px;
-  color: rgba(212, 212, 212, 1);
+	outline: none;
+	width: 240px;
+	height: 28px;
+	border: 1px solid rgba(56, 62, 72, 1);/*rgb(48, 56, 59);*/
+	background-color: rgba(56, 62, 72, 1);
+	text-indent: 8px;
+	color: rgba(212, 212, 212, 1);
 }
 
 button {
-  outline: none;
-  background-color: rgba(56, 62, 72, 1);
-  color: rgba(230,230,230, 1);
-  border: none;
-  margin: 0;
-  margin-left: 1px;
-  padding: 0 8px;
-  height: 32px;
-  cursor: pointer;
+	outline: none;
+	background-color: rgba(56, 62, 72, 1);
+	color: rgba(230,230,230, 1);
+	border: none;
+	margin: 0;
+	margin-left: 1px;
+	padding: 0 8px;
+	height: 32px;
+	cursor: pointer;
 }
 
 button:hover {
-  outline: none;
-  background-color: rgba(72, 78, 88, 1);/*rgb(64, 72, 75);*/
-  color: rgba(242, 242, 242, 1);
+	outline: none;
+	background-color: rgba(72, 78, 88, 1);/*rgb(64, 72, 75);*/
+	color: rgba(242, 242, 242, 1);
 }
 
 div.rooms {
-  grid-area: content;
-  height: calc(100vh - 56px);
+	grid-area: content;
+	height: calc(100vh - 56px);
 }
 
 div.rooms > ul {
-  max-height: calc(100% - 64px);
-  margin: 32px auto;
-  width: calc(100% - 64px);
+	max-height: calc(100% - 64px);
+	margin: 32px auto;
+	width: calc(100% - 64px);
 }
 
 div.rooms > ul > li {
-  width: calc(50% - 48px);
-  height: 80px;
-  margin: 0;
-  margin-left: 16px;
-  float: left;
+	width: calc(50% - 48px);
+	height: 80px;
+	margin: 0;
+	margin-left: 16px;
+	float: left;
 
-  display: grid;
+	display: grid;
 
-  grid-template-columns: auto auto 120px;
+	grid-template-columns: auto auto 120px;
 
-  grid-template-rows: 24px 32px 24px;
+	grid-template-rows: 24px 32px 24px;
 
-  grid-template-areas:
-          "leftTop centerTop rightTop"
-          "leftTop centerCenter rightCenter"
-          "leftBottom leftContainer rightBottom";
+	grid-template-areas:
+					"leftTop centerTop rightTop"
+					"leftTop centerCenter rightCenter"
+					"leftBottom leftContainer rightBottom";
 
-  background-color: rgba(40, 46, 56, 1);
-  margin-bottom: 32px;
-  padding: 16px;
+	background-color: rgba(40, 46, 56, 1);
+	margin-bottom: 32px;
+	padding: 16px;
 
-  -webkit-box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
-  -moz-box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
-  box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
+	-webkit-box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
+	-moz-box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
+	box-shadow: 0px 0px 10px 0px rgba(171,171,171,1);
 
-  border-radius: 3px;
-  -moz-border-radius: 3px;
-  -webkit-border-radius: 3px;
+	border-radius: 3px;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
 }
 
 div.rooms > ul > li > span.room {
-  grid-area: leftTop;
-  height: 48px;
-  margin: 0;
-  line-height: 48px;
-  font-weight: bold;
-  font-size: 18px;
+	grid-area: leftTop;
+	height: 48px;
+	margin: 0;
+	line-height: 48px;
+	font-weight: bold;
+	font-size: 18px;
 }
 
 div.rooms > ul > li > span.createdBy {
-  grid-area: leftBottom;
-  height: 24px;
-  margin: 0;
-  line-height: 24px;
+	grid-area: leftBottom;
+	height: 24px;
+	margin: 0;
+	line-height: 24px;
 }
 
 div.rooms > ul > li > span.connected {
-  grid-area: centerCenter;
-  height: 32px;
-  margin: 0;
-  line-height: 32px;
-  padding: 0 16px;
+	grid-area: centerCenter;
+	height: 32px;
+	margin: 0;
+	line-height: 32px;
+	padding: 0 16px;
 }
 
 div.rooms > ul > li > button {
-  grid-area: rightCenter;
-  height: 32px;
-  margin: 0;
-  line-height: 32px;
+	grid-area: rightCenter;
+	height: 32px;
+	margin: 0;
+	line-height: 32px;
 }
 
 div.rooms > ul > li:nth-child(2n + 1) {
-  margin: 0;
-  margin-right: 16px;
+	margin: 0;
+	margin-right: 16px;
 }
 
 div.rooms > ul > li > span {
-  color: rgba(212, 212, 212, 1);
+	color: rgba(212, 212, 212, 1);
 }
 
 div.modal > div.modal-rules-box {
-  position: relative;
-  width: 50%;
-  height: calc(100vh - 64px);
+	position: relative;
+	width: 50%;
+	height: calc(100vh - 64px);
 
-  margin: 32px auto;
+	margin: 32px auto;
 
-  display: block;
+	display: block;
 
-  background-color: rgba(40, 46, 56, 1);
+	background-color: rgba(40, 46, 56, 1);
 
-  border-radius: 3px;
-  -moz-border-radius: 3px;
-  -webkit-border-radius: 3px;
-  overflow-x: hidden;
-  overflow-y: auto;
+	border-radius: 3px;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	overflow-x: hidden;
+	overflow-y: auto;
 
-  color: rgba(242, 242, 242, 1);
+	color: rgba(242, 242, 242, 1);
 }
 
 div.modal > div.modal-rules-box > h1 { 
-  text-align: center;
+	text-align: center;
 
-  font-size: 32px;
+	font-size: 32px;
 }
 
 div.modal > div.modal-rules-box > div.section { 
-  padding: 16px;
+	padding: 16px;
 }
 
 div.modal > div.modal-rules-box > div.section > h2 { 
-  font-size: 20px;
-  color: rgba(230, 230, 230, 1);
+	font-size: 20px;
+	color: rgba(230, 230, 230, 1);
 }
 
 div.modal > div.modal-rules-box > div.section h3 { 
@@ -335,35 +335,35 @@ div.modal > div.modal-rules-box > div.section li {
 }
 
 div.modal > div.modal-rules-box > div.section img {
-  width: 96px;
-  display: block;
-  margin: 0 auto;
+	width: 96px;
+	display: block;
+	margin: 0 auto;
 }
 
 div.modal > div.modal-rules-box > button {
-  width: 100%;
-  height: 40px;
-  display: block;
-  margin: 0;
+	width: 100%;
+	height: 40px;
+	display: block;
+	margin: 0;
 }
 
 div.modal > div.modal-rules-box > div.close {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  width: 40px;
-  height: 40px;
-  display: block;
-  margin: 0;
-  line-height: 40px;
-  text-align: center;
-  cursor: pointer;
+	position: absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	width: 40px;
+	height: 40px;
+	display: block;
+	margin: 0;
+	line-height: 40px;
+	text-align: center;
+	cursor: pointer;
 }
 
 @media only screen and (max-width: 600px) {
-    div#main-container {
+		div#main-container {
 		grid-template-columns: 0 1fr;
 	}
 
@@ -379,7 +379,7 @@ div.modal > div.modal-rules-box > div.close {
 
 /* Small devices (portrait tablets and large phones, 600px and up) */
 @media only screen and (min-width: 600px) {
-    div#main-container {
+		div#main-container {
 		grid-template-columns: 0 1fr;
 	}
 
@@ -395,7 +395,7 @@ div.modal > div.modal-rules-box > div.close {
 
 /* Medium devices (landscape tablets, 768px and up) */
 @media only screen and (min-width: 768px) {
-    div#main-container {
+		div#main-container {
 		grid-template-columns: 1fr 3fr;
 	}
 
@@ -410,7 +410,7 @@ div.modal > div.modal-rules-box > div.close {
 		grid-template-columns: 1fr 4fr;
 	}
 
-    div.rooms > ul > li {
+		div.rooms > ul > li {
 		width: calc(50% - 48px);
 		margin: initial;
 	}
@@ -418,7 +418,7 @@ div.modal > div.modal-rules-box > div.close {
 
 /* Extra large devices (large laptops and desktops, 1200px and up) */
 @media only screen and (min-width: 1200px) {
-    div#main-container {
+		div#main-container {
 		grid-template-columns: 1fr 5fr;
 	}
 }

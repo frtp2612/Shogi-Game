@@ -143,9 +143,10 @@ const page = `
 <ul>
 </ul>
 </div>
-<div class="createRoom">
+<div class="nav-bar">
   <ul>
-  <li class="rules">Rules</li>
+	<li class="rules clickable">Rules</li>
+	<li class="contact clickable">Contact Us</li>
   <li><input type="text" class="roomName" placeholder="Room Name" minlength="4" maxlength="16">
   <button id="createRoomButton">Create Room</button></li>
   </ul>
