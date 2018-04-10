@@ -3,14 +3,9 @@
 <head>
 </head>
 <title>Play Shogi</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-    <script src="https://code.jquery.com/jquery-1.10.2.js" type="text/javascript"></script>
-    <script src="https://code.jquery.com/ui/1.11.2/jquery-ui.js" type="text/javascript"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <link href="https://fonts.googleapis.com/css?family=Noto+Sans" rel="stylesheet">
     
-    <link href="/stylesheets/main.css" rel="stylesheet" type="text/css">
-    <link href="/stylesheets/login.css" rel="stylesheet" type="text/css">
-    <link href="/stylesheets/board.css" rel="stylesheet" type="text/css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="An online multiplayer shogi game">
     <meta name="keywords" content="Game,Multiplayer,Online,Players,
@@ -24,10 +19,203 @@ Shogi,Japan,Play,Fun">
 
         gtag('config', 'UA-117108146-1');
     </script>
+    <style>
+    body {
+	    padding: 0;
+	    margin: 0;
+    }
+
+    * {
+	    font-size: 14px;
+	    font-family: "Noto Sans", sans-serif;
+	    -webkit-transition: all 300ms ease-out;
+	    -moz-transition: all 300ms ease-out;
+	    -o-transition: all 300ms ease-out;
+	    transition: all 300ms ease-out;
+    }
+
+    a {
+	    color: rgba(230, 230, 230, 1);
+	    text-decoration: none;
+    }
+
+    a:hover {
+	    color: rgba(242, 242, 242, 1);
+    }
+
+    ul {
+	    list-style: none;
+	    margin: 0;
+	    padding: 0;
+	    width: 100%;
+	    height: auto;
+	    display: block;
+    }
+
+    h4.copyright {
+	    grid-area: copyright;
+	    color: rgba(72, 78, 88, 1);
+
+	    text-align: center;
+	    align-self: end;
+
+	    font-weight: normal;
+    }
+
+    h3.beta {
+	    grid-area: beta;
+	    color: rgba(219, 64, 81,1);
+
+	    font-size: 18px;
+	    text-indent: 16px;
+    }
+
+    div.login,
+div.register {
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(40, 46, 56, 1);
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+
+    grid-template-areas:
+          "beta . ."
+          ". centerArea ."
+          ". copyright .";
+}
+
+div.login > div > div.logo img,
+div.register > div > div.logo img {
+    height: 104px;
+    margin: 0 auto;
+}
+
+div.login > div,
+div.register > div {
+    grid-area: centerArea;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-areas: "topPanel"
+                        "firstPanel" 
+                        "secondPanel";
+
+    color: rgba(230, 230, 230, 1);
+    text-align: center;
+}
+
+div.login > div > div.logo,
+div.register > div > div.logo {
+    grid-area: firstPanel;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 56px;
+    color: rgba(242, 242, 242, 1);
+
+    padding: 16px;
+}
+
+div.login > div > div.form,
+div.register > div > div.form {
+    grid-area: secondPanel;
+    padding: 16px;
+}
+
+div.login > div > div.form > input,
+div.register > div > div.form > input {
+    border: 2px solid rgba(56, 62, 72, 1);
+    background-color: transparent;
+
+    height: 40px;
+    width: calc(100% - 6px);
+
+    border-radius: 3px;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+
+    margin-bottom: 12px;
+}
+
+div.login > div > div.form > input:hover,
+div.register > div > div.form > input:hover {
+    border-color: rgba(72, 78, 88, 1);
+}
+
+div.login > div > div.form > input:focus,
+div.register > div > div.form > input:focus {
+    border-color: rgba(219, 64, 81,1);
+}
+
+div.login > div > div.form > button,
+div.register > div > div.form > button {
+
+    width: 100%;
+    height: 40px;
+    border: none;
+
+    border-radius: 3px;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+
+    background-color: rgba(219, 64, 81, 1);
+    margin-left: unset;
+    margin-bottom: 12px;
+}
+
+div.login > div > div.form > button:hover,
+div.register > div > div.form > button:hover {
+
+    background-color: rgba(232, 68, 86, 1);
+
+}
+
+@media only screen and (max-width: 600px) {
+    div.login,
+    div.register {
+        grid-template-columns: 64px 1fr 64px;
+    }
+}
+
+/* Small devices (portrait tablets and large phones, 600px and up) */
+@media only screen and (min-width: 600px) {
+    div.login,
+    div.register {
+        grid-template-columns: 1fr 60% 1fr;
+    }
+}
+
+/* Medium devices (landscape tablets, 768px and up) */
+@media only screen and (min-width: 768px) {
+    div.login,
+    div.register {
+        grid-template-columns: 1fr 50% 1fr;
+    }
+} 
+
+/* Large devices (laptops/desktops, 992px and up) */
+@media only screen and (min-width: 992px) {
+    div.login,
+    div.register {
+        grid-template-columns: 1fr 40% 1fr;
+    }
+} 
+
+/* Extra large devices (large laptops and desktops, 1200px and up) */
+@media only screen and (min-width: 1200px) {
+    div.login,
+    div.register {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+}
+    </style>
 <body>
 <div id="container">
     
 </div>
+<link href="/stylesheets/main.css" rel="stylesheet" type="text/css">
+<link href="/stylesheets/board.css" rel="stylesheet" type="text/css">
 <script src="/socket.io/socket.io.js"></script>
 <script src="/client.js"></script>
 </body>
