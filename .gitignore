@@ -6,8 +6,7 @@ npm-debug.log
 *.env
 *.dev
 .DS_Store
-/backup
-backup
+backup/
 
 # Docker
 Dockerfile
