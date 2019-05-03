@@ -1,3 +1,8 @@
+# player the beta
+
+Check out the beta:
+https://protected-stream-42304.herokuapp.com/
+
 # node-js-getting-started
 
 A barebones Node.js app using [Express 4](http://expressjs.com/).
