@@ -40,7 +40,7 @@ $(document).ready(function(){
     });
 
     $(document).on("click", ".contact", function() {
-        window.open('mailto:playshogionline@gmail.com?subject=subject&body=body');
+        //window.open('mailto:playshogionline@gmail.com?subject=subject&body=body');
     });
 
     $(document).on("click", ".close", function() {
